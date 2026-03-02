@@ -27,6 +27,7 @@ describe("callOrchestrator", () => {
         child_id: "child-1",
         message: "hello",
         module: "training",
+        role: "doctor",
         request_id: "req-3",
       },
       fetchMock,
@@ -39,6 +40,13 @@ describe("callOrchestrator", () => {
         method: "POST",
       }),
     );
+    const calls = fetchMock.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit | undefined]>;
+    const requestInit = calls[0]?.[1];
+    expect(requestInit).toBeDefined();
+    expect(typeof requestInit?.body).toBe("string");
+    expect(JSON.parse(String(requestInit?.body))).toMatchObject({
+      role: "doctor",
+    });
     expect(result[0]).toMatchObject({
       event: "delta",
       data: {
@@ -68,6 +76,7 @@ describe("callOrchestrator", () => {
           child_id: "child-1",
           message: "hello",
           module: "training",
+          role: "teacher",
           request_id: "req-3",
         },
         fetchMock,

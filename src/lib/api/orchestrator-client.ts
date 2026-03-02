@@ -8,10 +8,13 @@ type OrchestratorModule =
   | "training_record"
   | "dashboard";
 
+export type OrchestratorRole = "parent" | "doctor" | "teacher" | "org_admin";
+
 export type OrchestratorPayload = {
   child_id: string;
   message: string;
   module: OrchestratorModule;
+  role?: OrchestratorRole;
   request_id?: string;
   conversation_id?: string;
 };

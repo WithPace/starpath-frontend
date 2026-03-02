@@ -5,7 +5,7 @@ import { readFrontendEnv } from "@/lib/env";
 import { ChatFlow } from "@/components/chat/chat-flow";
 import { useChatStore } from "@/stores/chat-store";
 
-export default function ParentChatPage() {
+export default function TeacherChatPage() {
   const messages = useChatStore((state) => state.messages);
   const pending = useChatStore((state) => state.pending);
   const setPending = useChatStore((state) => state.setPending);
@@ -32,7 +32,7 @@ export default function ParentChatPage() {
           child_id: "placeholder-child-id",
           message,
           module: "chat_casual",
-          role: "parent",
+          role: "teacher",
           request_id: crypto.randomUUID(),
         },
       );
@@ -60,7 +60,7 @@ export default function ParentChatPage() {
 
   return (
     <main>
-      <h1>家长端对话</h1>
+      <h1>教师端对话</h1>
       <ChatFlow messages={messages} pending={pending} onSend={handleSend} />
     </main>
   );

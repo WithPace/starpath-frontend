@@ -1,0 +1,27 @@
+{
+  "events": [
+    {
+      "event": "delta",
+      "data": {
+        "request_id": "fixture-teacher-1",
+        "module": "dashboard",
+        "cards": [
+          {
+            "card_type": "summary_card",
+            "title": "本周教学概览"
+          }
+        ],
+        "text": "教师端教学建议已生成。"
+      }
+    },
+    {
+      "event": "done",
+      "data": {
+        "request_id": "fixture-teacher-1",
+        "module": "dashboard",
+        "role": "teacher",
+        "card_count": 1
+      }
+    }
+  ]
+}

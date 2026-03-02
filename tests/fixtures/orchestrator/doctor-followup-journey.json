@@ -1,0 +1,27 @@
+{
+  "events": [
+    {
+      "event": "delta",
+      "data": {
+        "request_id": "fixture-doctor-1",
+        "module": "dashboard",
+        "cards": [
+          {
+            "card_type": "summary_card",
+            "title": "本周随访概览"
+          }
+        ],
+        "text": "医生端随访重点已生成。"
+      }
+    },
+    {
+      "event": "done",
+      "data": {
+        "request_id": "fixture-doctor-1",
+        "module": "dashboard",
+        "role": "doctor",
+        "card_count": 1
+      }
+    }
+  ]
+}
