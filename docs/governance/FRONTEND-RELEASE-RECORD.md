@@ -7,9 +7,9 @@
 | phase | Phase 4 (Frontend Delivery) |
 | frontend_repo | starpath-frontend |
 | backend_repo | starpath |
-| frontend_commit_sha | pending |
-| backend_commit_sha | pending |
-| executed_at_utc | pending |
+| frontend_commit_sha | eda6965 |
+| backend_commit_sha | 37de439 |
+| executed_at_utc | 2026-03-02T05:02:33Z |
 | release_operator | 叶明君 |
 
 ## Verification Evidence
