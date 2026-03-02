@@ -1,0 +1,34 @@
+{
+  "events": [
+    {
+      "event": "delta",
+      "data": {
+        "request_id": "fixture-req-1",
+        "module": "dashboard",
+        "cards": [
+          {
+            "card_type": "summary_card",
+            "title": "本周训练概览"
+          }
+        ],
+        "text": "本周训练完成度稳定。"
+      }
+    },
+    {
+      "event": "done",
+      "data": {
+        "request_id": "fixture-req-1",
+        "module": "dashboard",
+        "card_count": 1
+      }
+    },
+    {
+      "event": "error",
+      "data": {
+        "request_id": "fixture-req-1",
+        "reason": "transport_error",
+        "message": "connection reset"
+      }
+    }
+  ]
+}
