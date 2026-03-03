@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ -f ".env.local" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source ".env.local"
+  set +a
+fi
+
 if [ "${RUN_E2E_LIVE:-0}" != "1" ]; then
   echo "skip live e2e (set RUN_E2E_LIVE=1 to enable)"
   exit 0
