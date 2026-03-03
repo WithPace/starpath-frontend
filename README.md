@@ -55,3 +55,25 @@ Gate includes:
 - `pnpm test`
 - `pnpm build`
 - `pnpm playwright test`
+
+## Optional Live Integration E2E (Real Supabase)
+
+To execute authenticated live business-chain test (not mock-only), set these env keys:
+
+- `RUN_E2E_LIVE=1`
+- `E2E_LIVE_EMAIL`
+- `E2E_LIVE_PASSWORD`
+- `E2E_LIVE_PARENT_CHILD_ID`
+- optional: `E2E_LIVE_CHAT_MESSAGE`
+
+Run:
+
+```bash
+bash scripts/ci/frontend_live_e2e.sh
+```
+
+Or run full gate with live stage:
+
+```bash
+RUN_E2E_LIVE=1 bash scripts/ci/frontend_final_gate.sh
+```
