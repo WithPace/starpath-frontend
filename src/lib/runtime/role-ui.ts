@@ -62,6 +62,7 @@ export function getRoleLaunchItems(): Array<{
       title: "家长端",
       description: "接收评估解读、训练建议和每日跟进。",
       actions: [
+        { label: "家长端 · 原型13页", href: "/welcome" },
         { label: "家长端 · 对话", href: ROLE_UI_META.parent.chatPath },
         { label: "家长端 · 看板", href: ROLE_UI_META.parent.dashboardPath },
         { label: "家长端 · 业务链路", href: ROLE_UI_META.parent.journeyPath ?? "/journey" },

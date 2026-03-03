@@ -8,6 +8,7 @@ describe("Home", () => {
     render(<Home />);
 
     expect(screen.getByText("StarPath 多角色工作台")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "家长原型 13 页" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "家长端 · 对话" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "家长端 · 业务链路" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "医生端 · 看板" })).toBeInTheDocument();

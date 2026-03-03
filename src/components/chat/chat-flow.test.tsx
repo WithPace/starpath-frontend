@@ -18,6 +18,9 @@ describe("ChatFlow", () => {
 
     expect(screen.getByText("欢迎回来")).toBeInTheDocument();
     expect(screen.getByText("给我训练建议")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "语音输入" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "添加媒体" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看档案" })).toBeInTheDocument();
   });
 
   it("submits user input through onSend", () => {

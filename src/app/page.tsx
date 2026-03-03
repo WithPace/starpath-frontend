@@ -24,6 +24,9 @@ export default function Home() {
           <Link href="/auth" className="button-primary">
             去认证与运行时配置
           </Link>
+          <Link href="/welcome" className="button-secondary">
+            家长原型 13 页
+          </Link>
         </div>
       </section>
 

@@ -19,6 +19,7 @@ const quickPrompts = [
 
 export function ChatFlow({ messages, pending, onSend, roleLabel }: ChatFlowProps) {
   const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -62,13 +63,25 @@ export function ChatFlow({ messages, pending, onSend, roleLabel }: ChatFlowProps
         ))}
       </div>
       <form onSubmit={submit} className="chat-flow__composer">
-        <input
-          aria-label="chat-input"
-          placeholder="输入你的问题..."
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          disabled={pending}
-        />
+        <div className={focused ? "chat-flow__input-shell focused" : "chat-flow__input-shell"}>
+          <div className="chat-flow__input-top">
+            <button type="button" aria-label="语音输入" className="chip-button">🎤</button>
+            <input
+              aria-label="chat-input"
+              placeholder="输入你的问题..."
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              disabled={pending}
+            />
+            <button type="button" aria-label="添加媒体" className="chip-button">＋</button>
+          </div>
+          <div className="chat-flow__input-bottom">
+            <button type="button" className="button-link">乐乐 ⇄</button>
+            <button type="button" aria-label="查看档案" className="button-link">查看档案 ›</button>
+          </div>
+        </div>
         <button type="submit" disabled={pending} className="button-primary">
           发送
         </button>

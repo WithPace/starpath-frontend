@@ -5,6 +5,18 @@
 This repo is the Phase 5 user-facing frontend for StarPath roles:
 
 - parent: `/chat`, `/dashboard`, `/journey` (assessment -> training_advice -> training -> training_record)
+- parent prototype routes:
+  - `/welcome`
+  - `/quick-menu`
+  - `/settings`
+  - `/create-child`
+  - `/card-fullscreen`
+  - `/assessment`
+  - `/home-guide`
+  - `/voice-record`
+  - `/training-weekly`
+  - `/analysis-report`
+  - `/training-detail`
 - doctor: `/doctor/chat`, `/doctor/dashboard`
 - teacher: `/teacher/chat`, `/teacher/dashboard`
 - org admin: `/org-admin/dashboard`, `/org-admin/members`
