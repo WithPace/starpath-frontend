@@ -38,7 +38,7 @@ Open `http://localhost:3000`.
 ## Runtime Auth and Child Context
 
 1. Open `/auth`.
-2. Sign in with Supabase email/password.
+2. Enter phone number, send SMS code, and complete OTP sign-in.
 3. Optionally set manual runtime token + child_id for integration debugging.
 4. Open role pages and verify runtime context panel shows login/child selection.
 
@@ -61,8 +61,8 @@ Gate includes:
 To execute authenticated live business-chain test (not mock-only), set these env keys:
 
 - `RUN_E2E_LIVE=1`
-- `E2E_LIVE_EMAIL`
-- `E2E_LIVE_PASSWORD`
+- `E2E_LIVE_PHONE` (E.164 format, example: `+8613800138000`)
+- `E2E_LIVE_OTP` (fresh SMS code for this run)
 - `E2E_LIVE_PARENT_CHILD_ID`
 - optional: `E2E_LIVE_CHAT_MESSAGE`
 

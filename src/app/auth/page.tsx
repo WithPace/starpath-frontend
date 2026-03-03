@@ -16,11 +16,11 @@ export default function AuthPage() {
   const router = useRouter();
   const client = tryCreateBrowserSupabaseClient();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [manualToken, setManualToken] = useState("");
   const [manualChildId, setManualChildId] = useState("");
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [sessionIdentity, setSessionIdentity] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const nextPath =
@@ -34,7 +34,7 @@ export default function AuthPage() {
     let active = true;
     client.auth.getSession().then(({ data }) => {
       if (!active) return;
-      setSessionEmail(data.session?.user.email ?? null);
+      setSessionIdentity(data.session?.user.phone ?? data.session?.user.email ?? null);
       const manual = readManualRuntimeCredentialsFromWindow();
       setManualToken(manual.manualAccessToken ?? "");
       setManualChildId(manual.manualChildId ?? "");
@@ -49,25 +49,62 @@ export default function AuthPage() {
     if (!client) return;
 
     const { data } = await client.auth.getSession();
-    setSessionEmail(data.session?.user.email ?? null);
+    setSessionIdentity(data.session?.user.phone ?? data.session?.user.email ?? null);
     const manual = readManualRuntimeCredentialsFromWindow();
     setManualToken(manual.manualAccessToken ?? "");
     setManualChildId(manual.manualChildId ?? "");
   };
 
-  const submitSignIn = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const sendOtp = async () => {
     if (!client) {
-      setMessage("缺少 Supabase 前端环境变量，无法执行登录。");
+      setMessage("缺少 Supabase 前端环境变量，无法执行验证码登录。");
+      return;
+    }
+    if (!phone.trim()) {
+      setMessage("请先输入手机号。");
       return;
     }
 
     setPending(true);
     setMessage(null);
-    const { error } = await client.auth.signInWithPassword({ email, password });
+    const { error } = await client.auth.signInWithOtp({
+      phone: phone.trim(),
+      options: {
+        shouldCreateUser: true,
+      },
+    });
 
     if (error) {
-      setMessage(`登录失败：${error.message}`);
+      setMessage(`发送验证码失败：${error.message}`);
+      setPending(false);
+      return;
+    }
+
+    setMessage("验证码已发送，请查收短信。");
+    setPending(false);
+  };
+
+  const verifyOtp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!client) {
+      setMessage("缺少 Supabase 前端环境变量，无法执行验证码登录。");
+      return;
+    }
+    if (!phone.trim() || !otp.trim()) {
+      setMessage("请输入手机号和验证码。");
+      return;
+    }
+
+    setPending(true);
+    setMessage(null);
+    const { error } = await client.auth.verifyOtp({
+      phone: phone.trim(),
+      token: otp.trim(),
+      type: "sms",
+    });
+
+    if (error) {
+      setMessage(`验证码登录失败：${error.message}`);
       setPending(false);
       return;
     }
@@ -75,27 +112,6 @@ export default function AuthPage() {
     await refreshState();
     setMessage("登录成功。");
     router.replace(nextPath);
-    setPending(false);
-  };
-
-  const submitSignUp = async () => {
-    if (!client) {
-      setMessage("缺少 Supabase 前端环境变量，无法执行注册。");
-      return;
-    }
-
-    setPending(true);
-    setMessage(null);
-    const { error } = await client.auth.signUp({ email, password });
-
-    if (error) {
-      setMessage(`注册失败：${error.message}`);
-      setPending(false);
-      return;
-    }
-
-    await refreshState();
-    setMessage("注册请求已提交，请按 Supabase 配置完成邮箱验证后登录。");
     setPending(false);
   };
 
@@ -145,7 +161,7 @@ export default function AuthPage() {
           </nav>
         </header>
 
-        <p className="runtime-panel__status">当前会话：{sessionEmail ?? "未登录"}</p>
+        <p className="runtime-panel__status">当前会话：{sessionIdentity ?? "未登录"}</p>
         {!client ? (
           <p className="runtime-panel__warning">
             当前环境未配置 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY。
@@ -154,32 +170,42 @@ export default function AuthPage() {
         {message ? <p className="muted-text">{message}</p> : null}
 
         <section aria-label="supabase-auth" className="form-grid">
-          <h2>Supabase 登录</h2>
-          <form onSubmit={submitSignIn}>
+          <h2>手机号验证码登录</h2>
+          <form onSubmit={verifyOtp}>
             <label>
-              Email
+              手机号
               <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="+8613800138000"
                 required
+                autoComplete="tel"
               />
             </label>
             <label>
-              Password
+              验证码
               <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                type="text"
+                value={otp}
+                onChange={(event) => setOtp(event.target.value)}
+                placeholder="6位短信验证码"
                 required
+                inputMode="numeric"
+                autoComplete="one-time-code"
               />
             </label>
             <div className="form-actions">
-              <button type="submit" disabled={pending} className="button-primary">
-                登录
+              <button
+                type="button"
+                onClick={() => void sendOtp()}
+                disabled={pending}
+                className="button-secondary"
+              >
+                发送验证码
               </button>
-              <button type="button" onClick={() => void submitSignUp()} disabled={pending} className="button-secondary">
-                注册
+              <button type="submit" disabled={pending} className="button-primary">
+                验证码登录
               </button>
               <button type="button" onClick={() => void signOut()} disabled={pending} className="button-secondary">
                 退出

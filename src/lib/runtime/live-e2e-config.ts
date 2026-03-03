@@ -3,15 +3,15 @@ type EnvInput = Record<string, string | undefined>;
 type LiveE2EConfig = {
   enabled: boolean;
   missing: string[];
-  email: string | null;
-  password: string | null;
+  phone: string | null;
+  otp: string | null;
   parentChildId: string | null;
   chatMessage: string;
 };
 
 const REQUIRED_KEYS = [
-  "E2E_LIVE_EMAIL",
-  "E2E_LIVE_PASSWORD",
+  "E2E_LIVE_PHONE",
+  "E2E_LIVE_OTP",
   "E2E_LIVE_PARENT_CHILD_ID",
 ] as const;
 
@@ -25,8 +25,8 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
     return {
       enabled: false,
       missing: [],
-      email: null,
-      password: null,
+      phone: null,
+      otp: null,
       parentChildId: null,
       chatMessage: "请基于当前孩子情况给出今天可执行的训练建议。",
     };
@@ -42,8 +42,8 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
   return {
     enabled: true,
     missing,
-    email: normalize(env.E2E_LIVE_EMAIL) || null,
-    password: normalize(env.E2E_LIVE_PASSWORD) || null,
+    phone: normalize(env.E2E_LIVE_PHONE) || null,
+    otp: normalize(env.E2E_LIVE_OTP) || null,
     parentChildId: normalize(env.E2E_LIVE_PARENT_CHILD_ID) || null,
     chatMessage: normalize(env.E2E_LIVE_CHAT_MESSAGE) || "请基于当前孩子情况给出今天可执行的训练建议。",
   };

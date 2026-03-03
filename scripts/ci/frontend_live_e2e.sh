@@ -14,8 +14,8 @@ if [ "${RUN_E2E_LIVE:-0}" != "1" ]; then
 fi
 
 required_keys=(
-  E2E_LIVE_EMAIL
-  E2E_LIVE_PASSWORD
+  E2E_LIVE_PHONE
+  E2E_LIVE_OTP
   E2E_LIVE_PARENT_CHILD_ID
 )
 

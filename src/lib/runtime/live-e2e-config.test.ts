@@ -6,8 +6,8 @@ describe("getLiveE2EConfig", () => {
   it("returns disabled config when live gate is off", () => {
     const config = getLiveE2EConfig({
       RUN_E2E_LIVE: "0",
-      E2E_LIVE_EMAIL: "",
-      E2E_LIVE_PASSWORD: "",
+      E2E_LIVE_PHONE: "",
+      E2E_LIVE_OTP: "",
       E2E_LIVE_PARENT_CHILD_ID: "",
     });
 
@@ -18,15 +18,15 @@ describe("getLiveE2EConfig", () => {
   it("lists missing keys when live gate is on", () => {
     const config = getLiveE2EConfig({
       RUN_E2E_LIVE: "1",
-      E2E_LIVE_EMAIL: "",
-      E2E_LIVE_PASSWORD: "",
+      E2E_LIVE_PHONE: "",
+      E2E_LIVE_OTP: "",
       E2E_LIVE_PARENT_CHILD_ID: "",
     });
 
     expect(config.enabled).toBe(true);
     expect(config.missing).toEqual([
-      "E2E_LIVE_EMAIL",
-      "E2E_LIVE_PASSWORD",
+      "E2E_LIVE_PHONE",
+      "E2E_LIVE_OTP",
       "E2E_LIVE_PARENT_CHILD_ID",
     ]);
   });
@@ -34,16 +34,16 @@ describe("getLiveE2EConfig", () => {
   it("returns normalized live credentials when all keys exist", () => {
     const config = getLiveE2EConfig({
       RUN_E2E_LIVE: "1",
-      E2E_LIVE_EMAIL: " test@example.com ",
-      E2E_LIVE_PASSWORD: " secret ",
+      E2E_LIVE_PHONE: " +8613800138000 ",
+      E2E_LIVE_OTP: " 123456 ",
       E2E_LIVE_PARENT_CHILD_ID: " 11111111-1111-1111-1111-111111111111 ",
       E2E_LIVE_CHAT_MESSAGE: " hello ",
     });
 
     expect(config.enabled).toBe(true);
     expect(config.missing).toEqual([]);
-    expect(config.email).toBe("test@example.com");
-    expect(config.password).toBe("secret");
+    expect(config.phone).toBe("+8613800138000");
+    expect(config.otp).toBe("123456");
     expect(config.parentChildId).toBe("11111111-1111-1111-1111-111111111111");
     expect(config.chatMessage).toBe("hello");
   });

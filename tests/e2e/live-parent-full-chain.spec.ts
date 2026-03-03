@@ -12,10 +12,11 @@ test.describe("@live parent full chain", () => {
 
     await page.goto("/auth");
 
-    await page.getByLabel("Email").fill(config.email ?? "");
-    await page.getByLabel("Password").fill(config.password ?? "");
-    await page.getByRole("button", { name: "登录" }).click();
-    await expect(page.getByText("当前会话：")).toContainText(config.email ?? "");
+    await page.getByLabel("手机号").fill(config.phone ?? "");
+    await page.getByRole("button", { name: "发送验证码" }).click();
+    await page.getByLabel("验证码").fill(config.otp ?? "");
+    await page.getByRole("button", { name: "验证码登录" }).click();
+    await expect(page.getByText("当前会话：")).not.toContainText("未登录");
 
     await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
     await page.getByRole("button", { name: "保存手动配置" }).click();
