@@ -1,18 +1,49 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/prototype/parent-shell";
+import { createChildProfile } from "@/lib/prototype/parent-data-access";
+import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function CreateChildPage() {
+  const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
+
   const [nickname, setNickname] = useState("");
   const [age, setAge] = useState("");
   const [domain, setDomain] = useState("语言沟通");
-  const [submitted, setSubmitted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successText, setSuccessText] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
+
+    if (!client) {
+      setErrorText("缺少 Supabase 前端配置，请先检查 .env.local。");
+      setSuccessText(null);
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setSuccessText(null);
+      setErrorText(null);
+      setWarnings([]);
+
+      const result = await createChildProfile(client, {
+        nickname,
+        age,
+      });
+
+      setSuccessText(`档案已保存：${nickname}（child_id: ${result.childId}）`);
+      setWarnings(result.warnings);
+    } catch (error) {
+      setErrorText(error instanceof Error ? error.message : "保存失败，请稍后重试。");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -39,13 +70,31 @@ export default function CreateChildPage() {
               <option>生活适应</option>
             </select>
           </label>
-          <button type="submit" className="button-primary">保存并生成档案</button>
+          <button type="submit" className="button-primary" disabled={isSaving}>
+            {isSaving ? "保存中..." : "保存并生成档案"}
+          </button>
         </form>
       </section>
-      {submitted ? (
+
+      {successText ? (
         <section className="proto-panel">
-          <h2>档案预览</h2>
-          <p className="proto-muted">已记录：{nickname}，{age}岁，当前聚焦 {domain}。</p>
+          <h2>档案已保存</h2>
+          <p className="proto-muted">{successText}</p>
+          <p className="proto-muted">当前聚焦：{domain}。</p>
+          {warnings.length > 0 ? (
+            <ul className="proto-bullets">
+              {warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
+      {errorText ? (
+        <section className="proto-panel">
+          <h2>保存失败</h2>
+          <p className="proto-muted">{errorText}</p>
         </section>
       ) : null}
     </ParentShell>
