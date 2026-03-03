@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import { callOrchestrator, type OrchestratorRole } from "@/lib/api/orchestrator-client";
 import { DashboardCards } from "@/components/cards/dashboard-cards";
 import { RoleRuntimePanel } from "@/components/runtime/role-runtime-panel";
 import { readFrontendEnv } from "@/lib/env";
 import { extractDashboardCards } from "@/lib/runtime/dashboard-cards";
+import { isPermissionDeniedMessage } from "@/lib/runtime/org-members";
+import { reportRuntimeError } from "@/lib/runtime/runtime-telemetry";
+import { useProtectedRoute } from "@/lib/runtime/use-protected-route";
 import { useRoleRuntime } from "@/lib/runtime/use-role-runtime";
 import { useDashboardStore } from "@/stores/dashboard-store";
 
@@ -17,7 +21,9 @@ type RoleDashboardPageProps = {
 };
 
 export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageProps) {
+  const router = useRouter();
   const runtime = useRoleRuntime(role);
+  const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
 
   const cards = useDashboardStore((state) => state.cards);
   const loading = useDashboardStore((state) => state.loading);
@@ -27,14 +33,24 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
   const setError = useDashboardStore((state) => state.setError);
 
   useEffect(() => {
-    const run = async () => {
-      if (!runtime.accessToken || !runtime.selectedChildId) {
-        setCards([]);
-        setLoading(false);
-        setError("请先完成登录并选择孩子，再加载看板。");
-        return;
-      }
+    if (!routeDecision.allow) {
+      setCards([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
+    const accessToken = runtime.accessToken;
+    const childId = runtime.selectedChildId;
+
+    if (!runtime.isAuthenticated || !childId || !accessToken) {
+      setCards([]);
+      setLoading(false);
+      setError("请先完成登录并选择孩子，再加载看板。");
+      return;
+    }
+
+    const run = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -43,10 +59,10 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
         const events = await callOrchestrator(
           {
             apiBaseUrl: env.apiBaseUrl,
-            accessToken: runtime.accessToken,
+            accessToken,
           },
           {
-            child_id: runtime.selectedChildId,
+            child_id: childId,
             message: "请生成当前角色的看板数据",
             module: "dashboard",
             role,
@@ -63,7 +79,18 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
 
         setCards(nextCards);
       } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : "看板加载失败");
+        const errorMessage = requestError instanceof Error ? requestError.message : "看板加载失败";
+        reportRuntimeError({
+          scope: "role_dashboard",
+          message: errorMessage,
+          context: { role, route: "dashboard" },
+        });
+
+        if (isPermissionDeniedMessage(errorMessage)) {
+          router.replace(`/forbidden?reason=permission_denied&role=${role}`);
+        }
+
+        setError(errorMessage);
         setCards([]);
       } finally {
         setLoading(false);
@@ -71,7 +98,26 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
     };
 
     void run();
-  }, [role, runtime.accessToken, runtime.selectedChildId, setCards, setError, setLoading]);
+  }, [
+    role,
+    routeDecision.allow,
+    router,
+    runtime.accessToken,
+    runtime.isAuthenticated,
+    runtime.selectedChildId,
+    setCards,
+    setError,
+    setLoading,
+  ]);
+
+  if (!routeDecision.allow) {
+    return (
+      <main>
+        <h1>{title}</h1>
+        <p>正在跳转到认证页面...</p>
+      </main>
+    );
+  }
 
   return (
     <main>

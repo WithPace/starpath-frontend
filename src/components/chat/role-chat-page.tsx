@@ -1,8 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 import { callOrchestrator, type OrchestratorRole } from "@/lib/api/orchestrator-client";
 import { readFrontendEnv } from "@/lib/env";
 import { RoleRuntimePanel } from "@/components/runtime/role-runtime-panel";
+import { isPermissionDeniedMessage } from "@/lib/runtime/org-members";
+import { reportRuntimeError } from "@/lib/runtime/runtime-telemetry";
+import { useProtectedRoute } from "@/lib/runtime/use-protected-route";
 import { useRoleRuntime } from "@/lib/runtime/use-role-runtime";
 import { ChatFlow } from "@/components/chat/chat-flow";
 import { useChatStore } from "@/stores/chat-store";
@@ -22,12 +28,22 @@ function buildAssistantMessage(content: string) {
 }
 
 export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
+  const router = useRouter();
   const runtime = useRoleRuntime(role);
+  const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
 
   const messages = useChatStore((state) => state.messages);
   const pending = useChatStore((state) => state.pending);
   const setPending = useChatStore((state) => state.setPending);
   const addMessage = useChatStore((state) => state.addMessage);
+
+  useEffect(() => {
+    if (!routeDecision.allow) return;
+    if (!runtime.isAuthenticated) return;
+    if (runtime.selectedChildId) return;
+
+    router.replace(`/forbidden?reason=no_child_access&role=${role}`);
+  }, [routeDecision.allow, role, router, runtime.isAuthenticated, runtime.selectedChildId]);
 
   const handleSend = async (message: string) => {
     addMessage({
@@ -37,7 +53,7 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
     });
 
     if (!runtime.accessToken) {
-      addMessage(buildAssistantMessage("请先到 /auth 登录或配置访问令牌。"));
+      addMessage(buildAssistantMessage("请先完成认证，再发起对话。"));
       return;
     }
 
@@ -52,9 +68,9 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
 
       const events = await callOrchestrator(
         {
-          apiBaseUrl: env.apiBaseUrl,
-          accessToken: runtime.accessToken,
-        },
+            apiBaseUrl: env.apiBaseUrl,
+            accessToken: runtime.accessToken,
+          },
         {
           child_id: runtime.selectedChildId,
           message,
@@ -72,6 +88,18 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
 
       addMessage(buildAssistantMessage(text));
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "请求失败，请稍后重试。";
+      reportRuntimeError({
+        scope: "role_chat",
+        message: errorMessage,
+        context: { role, route: "chat" },
+      });
+
+      if (isPermissionDeniedMessage(errorMessage)) {
+        router.replace(`/forbidden?reason=permission_denied&role=${role}`);
+        return;
+      }
+
       addMessage(
         buildAssistantMessage(
           error instanceof Error ? `请求失败：${error.message}` : "请求失败，请稍后重试。",
@@ -81,6 +109,15 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
       setPending(false);
     }
   };
+
+  if (!routeDecision.allow) {
+    return (
+      <main>
+        <h1>{title}</h1>
+        <p>正在跳转到认证页面...</p>
+      </main>
+    );
+  }
 
   return (
     <main>
