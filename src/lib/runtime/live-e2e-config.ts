@@ -7,6 +7,7 @@ type LiveE2EConfig = {
   otp: string | null;
   parentChildId: string | null;
   chatMessage: string;
+  parentNickname: string;
 };
 
 const REQUIRED_KEYS = [
@@ -29,6 +30,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
       otp: null,
       parentChildId: null,
       chatMessage: "请基于当前孩子情况给出今天可执行的训练建议。",
+      parentNickname: "星途家长-自动化",
     };
   }
 
@@ -46,6 +48,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
     otp: normalize(env.E2E_LIVE_OTP) || null,
     parentChildId: normalize(env.E2E_LIVE_PARENT_CHILD_ID) || null,
     chatMessage: normalize(env.E2E_LIVE_CHAT_MESSAGE) || "请基于当前孩子情况给出今天可执行的训练建议。",
+    parentNickname: normalize(env.E2E_LIVE_PARENT_NICKNAME) || "星途家长-自动化",
   };
 }
 

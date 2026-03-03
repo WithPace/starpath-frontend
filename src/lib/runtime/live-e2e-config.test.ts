@@ -38,6 +38,7 @@ describe("getLiveE2EConfig", () => {
       E2E_LIVE_OTP: " 123456 ",
       E2E_LIVE_PARENT_CHILD_ID: " 11111111-1111-1111-1111-111111111111 ",
       E2E_LIVE_CHAT_MESSAGE: " hello ",
+      E2E_LIVE_PARENT_NICKNAME: " 星途家长 ",
     });
 
     expect(config.enabled).toBe(true);
@@ -46,5 +47,17 @@ describe("getLiveE2EConfig", () => {
     expect(config.otp).toBe("123456");
     expect(config.parentChildId).toBe("11111111-1111-1111-1111-111111111111");
     expect(config.chatMessage).toBe("hello");
+    expect(config.parentNickname).toBe("星途家长");
+  });
+
+  it("uses fallback nickname when live nickname is not provided", () => {
+    const config = getLiveE2EConfig({
+      RUN_E2E_LIVE: "1",
+      E2E_LIVE_PHONE: "+8613800138000",
+      E2E_LIVE_OTP: "123456",
+      E2E_LIVE_PARENT_CHILD_ID: "11111111-1111-1111-1111-111111111111",
+    });
+
+    expect(config.parentNickname).toBe("星途家长-自动化");
   });
 });

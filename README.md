@@ -38,6 +38,12 @@ Required keys:
 
 If env is missing, pages degrade gracefully and show runtime warnings.
 
+Go-live references:
+
+- `docs/governance/FRONTEND-GO-LIVE-CHECKLIST.md`
+- `docs/governance/FRONTEND-COMPLETENESS-AUDIT.md`
+- `docs/governance/FRONTEND-ROLLBACK-RUNBOOK.md`
+
 ## Local Development
 
 ```bash
@@ -77,6 +83,7 @@ To execute authenticated live business-chain test (not mock-only), set these env
 - `E2E_LIVE_OTP` (fresh SMS code for this run)
 - `E2E_LIVE_PARENT_CHILD_ID`
 - optional: `E2E_LIVE_CHAT_MESSAGE`
+- optional: `E2E_LIVE_PARENT_NICKNAME` (used for settings nickname save assertion)
 
 Run:
 
