@@ -1,4 +1,6 @@
 :root {
+  --font-ui: "Avenir Next", "Helvetica Neue", "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", "Consolas", "Menlo", monospace;
   --bg-start: #f6f7fb;
   --bg-mid: #edf1ff;
   --bg-end: #fff8f1;
@@ -461,6 +463,51 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.module-chain-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.module-chain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.module-chain-card {
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-strong);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.58rem;
+}
+
+.module-chain-card h2 {
+  font-size: 1rem;
+}
+
+.module-chain-card label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.module-chain-card details {
+  border: 1px dashed var(--border);
+  border-radius: 0.65rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.module-chain-card pre {
+  margin-top: 0.3rem;
+  max-height: 12rem;
+  overflow: auto;
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 
 .muted-text {

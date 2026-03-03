@@ -138,6 +138,7 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
               对话
             </Link>
             <Link href={roleUi.dashboardPath}>看板</Link>
+            {roleUi.journeyPath ? <Link href={roleUi.journeyPath}>业务链路</Link> : null}
             {roleUi.membersPath ? <Link href={roleUi.membersPath}>成员管理</Link> : null}
             <Link href="/auth">认证</Link>
           </nav>

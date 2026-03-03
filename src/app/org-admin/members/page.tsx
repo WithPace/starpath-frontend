@@ -276,7 +276,11 @@ export default function OrgAdminMembersPage() {
           </label>
           <label>
             机构角色
-            <input value={inviteRole} onChange={(event) => setInviteRole(event.target.value)} required />
+            <select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)} required>
+              <option value="owner">owner</option>
+              <option value="admin">admin</option>
+              <option value="teacher">teacher</option>
+            </select>
           </label>
           <button type="submit" disabled={invitePending} className="button-primary">
             {invitePending ? "提交中..." : "添加成员"}

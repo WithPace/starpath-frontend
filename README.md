@@ -4,7 +4,7 @@
 
 This repo is the Phase 5 user-facing frontend for StarPath roles:
 
-- parent: `/chat`, `/dashboard`
+- parent: `/chat`, `/dashboard`, `/journey` (assessment -> training_advice -> training -> training_record)
 - doctor: `/doctor/chat`, `/doctor/dashboard`
 - teacher: `/teacher/chat`, `/teacher/dashboard`
 - org admin: `/org-admin/dashboard`, `/org-admin/members`

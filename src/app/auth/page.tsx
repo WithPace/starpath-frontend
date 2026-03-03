@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
+import { resolveAuthNextPath } from "@/lib/runtime/auth-next";
 import {
   clearManualRuntimeCredentials,
   persistManualRuntimeCredentials,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/runtime/runtime-credentials";
 
 export default function AuthPage() {
+  const router = useRouter();
   const client = tryCreateBrowserSupabaseClient();
 
   const [email, setEmail] = useState("");
@@ -20,6 +23,10 @@ export default function AuthPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const nextPath =
+    typeof window === "undefined"
+      ? "/"
+      : resolveAuthNextPath(new URLSearchParams(window.location.search).get("next"));
 
   useEffect(() => {
     if (!client) return;
@@ -67,6 +74,7 @@ export default function AuthPage() {
 
     await refreshState();
     setMessage("登录成功。");
+    router.replace(nextPath);
     setPending(false);
   };
 

@@ -33,8 +33,11 @@ export default function Home() {
             <h2>{item.title}</h2>
             <p>{item.description}</p>
             <div className="landing-card__actions">
-              <Link href={item.primaryHref}>{item.primaryLabel}</Link>
-              <Link href={item.secondaryHref}>{item.secondaryLabel}</Link>
+              {item.actions.map((action) => (
+                <Link key={action.label} href={action.href}>
+                  {action.label}
+                </Link>
+              ))}
             </div>
           </article>
         ))}
