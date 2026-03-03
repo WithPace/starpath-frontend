@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createChildProfileWithGateway,
+  saveParentNicknameWithGateway,
   saveAssessmentWithGateway,
   saveVoiceRecordWithGateway,
   summarizeAssessmentAnswers,
   type CreateChildGateway,
   type CreateChildInput,
+  type SaveParentNicknameGateway,
   type SaveAssessmentGateway,
   type SaveVoiceGateway,
 } from "./parent-data-access";
@@ -104,6 +106,16 @@ function buildVoiceGateway(overrides?: Partial<SaveVoiceGateway>): SaveVoiceGate
   };
 }
 
+function buildNicknameGateway(
+  overrides?: Partial<SaveParentNicknameGateway>,
+): SaveParentNicknameGateway {
+  return {
+    getSessionUserId: vi.fn(async () => "user-1"),
+    updateUserName: vi.fn(async () => {}),
+    ...overrides,
+  };
+}
+
 describe("summarizeAssessmentAnswers", () => {
   it("calculates score and risk level from answers", () => {
     const result = summarizeAssessmentAnswers(["否", "否", "偶尔"]);
@@ -179,5 +191,29 @@ describe("saveVoiceRecordWithGateway", () => {
       },
     });
     expect(result).toEqual({ lifeRecordId: "life-1" });
+  });
+});
+
+describe("saveParentNicknameWithGateway", () => {
+  it("updates current user nickname", async () => {
+    const gateway = buildNicknameGateway();
+
+    const result = await saveParentNicknameWithGateway(gateway, "  新昵称  ");
+
+    expect(gateway.updateUserName).toHaveBeenCalledWith({
+      userId: "user-1",
+      name: "新昵称",
+    });
+    expect(result).toEqual({ name: "新昵称" });
+  });
+
+  it("throws when session user is missing", async () => {
+    const gateway = buildNicknameGateway({
+      getSessionUserId: vi.fn(async () => null),
+    });
+
+    await expect(saveParentNicknameWithGateway(gateway, "妈妈")).rejects.toThrow(
+      "请先登录后再修改昵称。",
+    );
   });
 });

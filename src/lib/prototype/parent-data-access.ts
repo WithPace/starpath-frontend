@@ -104,6 +104,19 @@ export type SaveVoiceResult = {
   lifeRecordId: string;
 };
 
+export type SaveParentNicknameGateway = {
+  getSessionUserId: () => Promise<string | null>;
+  updateUserName: (input: { userId: string; name: string }) => Promise<void>;
+};
+
+export type UserProfileSnapshot = {
+  userId: string;
+  name: string | null;
+  phone: string | null;
+  sessionPhone: string | null;
+  sessionEmail: string | null;
+};
+
 export type AssessmentHistoryRow = {
   id: string;
   created_at: string | null;
@@ -116,6 +129,20 @@ export type VoiceHistoryRow = {
   occurred_at: string | null;
   summary: string | null;
   content: Record<string, unknown> | null;
+};
+
+export type TrainingSessionRecord = {
+  session_date: string | null;
+  target_skill: string | null;
+  duration_minutes: number | null;
+  success_rate: number | null;
+  notes: string | null;
+};
+
+export type LatestChildProfile = {
+  domain_levels: unknown;
+  overall_summary: string | null;
+  assessed_at: string | null;
 };
 
 function normalizeNow(now?: Date | string): Date {
@@ -276,6 +303,30 @@ export async function saveVoiceRecordWithGateway(
   };
 }
 
+export async function saveParentNicknameWithGateway(
+  gateway: SaveParentNicknameGateway,
+  nextNameRaw: string,
+): Promise<{ name: string }> {
+  const userId = await gateway.getSessionUserId();
+  if (!userId) {
+    throw new Error("请先登录后再修改昵称。");
+  }
+
+  const name = nextNameRaw.trim();
+  if (!name) {
+    throw new Error("昵称不能为空。");
+  }
+
+  await gateway.updateUserName({
+    userId,
+    name,
+  });
+
+  return {
+    name,
+  };
+}
+
 export function buildCreateChildGateway(client: SupabaseClient): CreateChildGateway {
   return {
     async getSessionUser() {
@@ -405,6 +456,30 @@ export function buildSaveVoiceGateway(client: SupabaseClient): SaveVoiceGateway 
   };
 }
 
+export function buildSaveParentNicknameGateway(client: SupabaseClient): SaveParentNicknameGateway {
+  return {
+    async getSessionUserId() {
+      const { data, error } = await client.auth.getSession();
+      if (error) {
+        throw new Error(`读取登录会话失败：${error.message}`);
+      }
+      return data.session?.user.id ?? null;
+    },
+    async updateUserName(input) {
+      const { error } = await client.from("users").upsert(
+        {
+          id: input.userId,
+          name: input.name,
+        },
+        { onConflict: "id" },
+      );
+      if (error) {
+        throw new Error(`更新 users.name 失败：${error.message}`);
+      }
+    },
+  };
+}
+
 export async function createChildProfile(
   client: SupabaseClient,
   input: CreateChildInput,
@@ -425,6 +500,45 @@ export async function saveVoiceRecord(
   input: SaveVoiceInput,
 ): Promise<SaveVoiceResult> {
   return saveVoiceRecordWithGateway(buildSaveVoiceGateway(client), input);
+}
+
+export async function saveParentNickname(
+  client: SupabaseClient,
+  nextNameRaw: string,
+): Promise<{ name: string }> {
+  return saveParentNicknameWithGateway(buildSaveParentNicknameGateway(client), nextNameRaw);
+}
+
+export async function getCurrentUserProfile(
+  client: SupabaseClient,
+): Promise<UserProfileSnapshot | null> {
+  const { data, error } = await client.auth.getSession();
+  if (error) {
+    throw new Error(`读取登录会话失败：${error.message}`);
+  }
+
+  const user = data.session?.user;
+  if (!user) return null;
+
+  const usersResp = await client
+    .from("users")
+    .select("id,name,phone")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (usersResp.error) {
+    throw new Error(`读取 users 失败：${usersResp.error.message}`);
+  }
+
+  const profile = usersResp.data as { id: string; name: string | null; phone: string | null } | null;
+
+  return {
+    userId: user.id,
+    name: profile?.name ?? null,
+    phone: profile?.phone ?? null,
+    sessionPhone: user.phone ?? null,
+    sessionEmail: user.email ?? null,
+  };
 }
 
 export async function listRecentAssessments(
@@ -464,4 +578,42 @@ export async function listRecentVoiceRecords(
   }
 
   return ((data as VoiceHistoryRow[] | null) ?? []);
+}
+
+export async function listRecentTrainingSessions(
+  client: SupabaseClient,
+  childId: string,
+  limit = 60,
+): Promise<TrainingSessionRecord[]> {
+  const { data, error } = await client
+    .from("training_sessions")
+    .select("session_date,target_skill,duration_minutes,success_rate,notes")
+    .eq("child_id", childId)
+    .order("session_date", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`读取 training_sessions 失败：${error.message}`);
+  }
+
+  return (data as TrainingSessionRecord[] | null) ?? [];
+}
+
+export async function listLatestChildProfile(
+  client: SupabaseClient,
+  childId: string,
+): Promise<LatestChildProfile | null> {
+  const { data, error } = await client
+    .from("children_profiles")
+    .select("domain_levels,overall_summary,assessed_at")
+    .eq("child_id", childId)
+    .order("assessed_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(`读取 children_profiles 失败：${error.message}`);
+  }
+
+  const rows = (data as LatestChildProfile[] | null) ?? [];
+  return rows[0] ?? null;
 }
