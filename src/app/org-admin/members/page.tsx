@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { RoleRuntimePanel } from "@/components/runtime/role-runtime-panel";
@@ -9,6 +10,7 @@ import {
   isPermissionDeniedMessage,
   normalizeStatusPatch,
 } from "@/lib/runtime/org-members";
+import { getRoleUiMeta } from "@/lib/runtime/role-ui";
 import { reportRuntimeError } from "@/lib/runtime/runtime-telemetry";
 import { useProtectedRoute } from "@/lib/runtime/use-protected-route";
 import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -26,6 +28,7 @@ export default function OrgAdminMembersPage() {
   const router = useRouter();
   const runtime = useRoleRuntime("org_admin");
   const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
+  const roleUi = getRoleUiMeta("org_admin");
   const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
 
   const [members, setMembers] = useState<OrgMember[]>([]);
@@ -221,16 +224,32 @@ export default function OrgAdminMembersPage() {
 
   if (!routeDecision.allow) {
     return (
-      <main>
-        <h1>机构成员管理</h1>
-        <p>正在跳转到认证页面...</p>
+      <main className={`app-shell ${roleUi.themeClass}`}>
+        <section className="surface-card">
+          <h1 className="page-title">机构成员管理</h1>
+          <p className="muted-text">正在跳转到认证页面...</p>
+        </section>
       </main>
     );
   }
 
   return (
-    <main>
-      <h1>机构成员管理</h1>
+    <main className={`app-shell ${roleUi.themeClass}`}>
+      <section className="surface-card">
+        <header className="role-header">
+          <div>
+            <p className="role-kicker">机构管理员</p>
+            <h1 className="page-title">机构成员管理</h1>
+          </div>
+          <nav className="role-nav" aria-label="org-admin-routes">
+            <Link href={roleUi.dashboardPath}>机构看板</Link>
+            <Link href={roleUi.membersPath ?? "/org-admin/members"} className="active">
+              成员管理
+            </Link>
+            <Link href="/auth">认证</Link>
+          </nav>
+        </header>
+
       <RoleRuntimePanel
         roleLabel="机构管理员"
         loading={runtime.loading}
@@ -244,9 +263,9 @@ export default function OrgAdminMembersPage() {
         onSignOut={runtime.signOut}
       />
 
-      <section aria-label="org-member-editor" style={{ marginBottom: 20 }}>
+      <section aria-label="org-member-editor" className="form-grid">
         <h2>新增成员</h2>
-        <form onSubmit={submitInvite} style={{ display: "grid", gap: 8, maxWidth: 720 }}>
+        <form onSubmit={submitInvite}>
           <label>
             机构 ID
             <input value={inviteOrgId} onChange={(event) => setInviteOrgId(event.target.value)} required />
@@ -259,26 +278,26 @@ export default function OrgAdminMembersPage() {
             机构角色
             <input value={inviteRole} onChange={(event) => setInviteRole(event.target.value)} required />
           </label>
-          <button type="submit" disabled={invitePending}>
+          <button type="submit" disabled={invitePending} className="button-primary">
             {invitePending ? "提交中..." : "添加成员"}
           </button>
         </form>
       </section>
 
-      <section aria-label="org-member-list">
+      <section aria-label="org-member-list" className="form-grid">
         <h2>成员列表</h2>
-        {loading ? <p>成员加载中...</p> : null}
-        {notice ? <p>{notice}</p> : null}
-        {error ? <p>成员处理失败：{error}</p> : null}
-        {!loading && !error && members.length === 0 ? <p>暂无成员数据</p> : null}
+        {loading ? <p className="muted-text">成员加载中...</p> : null}
+        {notice ? <p className="muted-text">{notice}</p> : null}
+        {error ? <p className="runtime-panel__warning">成员处理失败：{error}</p> : null}
+        {!loading && !error && members.length === 0 ? <p className="muted-text">暂无成员数据</p> : null}
         {!loading && !error && members.length > 0 ? (
-          <ul>
+          <ul className="members-list">
             {members.map((member) => (
-              <li key={member.id} style={{ marginBottom: 8 }}>
-                <div>
+              <li key={member.id} className="members-list__item">
+                <div className="members-list__summary">
                   org={member.org_id} / user={member.user_id} / role={member.org_role} / status={member.status}
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+                <div className="members-list__actions">
                   <label>
                     更新状态
                     <select
@@ -296,6 +315,7 @@ export default function OrgAdminMembersPage() {
             ))}
           </ul>
         ) : null}
+      </section>
       </section>
     </main>
   );

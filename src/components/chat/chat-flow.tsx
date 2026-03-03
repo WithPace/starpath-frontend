@@ -8,9 +8,16 @@ type ChatFlowProps = {
   messages: ChatMessage[];
   pending: boolean;
   onSend: (message: string) => void;
+  roleLabel?: string;
 };
 
-export function ChatFlow({ messages, pending, onSend }: ChatFlowProps) {
+const quickPrompts = [
+  "今天训练怎么安排？",
+  "帮我总结最近风险变化",
+  "给我一个可执行的家庭练习",
+];
+
+export function ChatFlow({ messages, pending, onSend, roleLabel }: ChatFlowProps) {
   const [value, setValue] = useState("");
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -22,16 +29,39 @@ export function ChatFlow({ messages, pending, onSend }: ChatFlowProps) {
   };
 
   return (
-    <section aria-label="chat-flow">
-      <ul>
+    <section aria-label="chat-flow" className="chat-flow">
+      <header className="chat-flow__header">
+        <h2>{roleLabel ? `${roleLabel}对话` : "角色对话"}</h2>
+        <p>基于执行链路实时生成建议，支持持续追问。</p>
+      </header>
+      <ul className="chat-flow__timeline">
         {messages.map((message) => (
-          <li key={message.id}>
-            <strong>{message.role === "assistant" ? "AI" : "我"}：</strong>
-            <span>{message.content}</span>
+          <li key={message.id} className={`chat-message ${message.role === "assistant" ? "assistant" : "user"}`}>
+            <p className="chat-message__tag">{message.role === "assistant" ? "AI 助手" : "你"}</p>
+            <p>{message.content}</p>
           </li>
         ))}
+        {pending ? (
+          <li className="chat-message assistant" aria-live="polite">
+            <p className="chat-message__tag">AI 助手</p>
+            <p>正在生成回复...</p>
+          </li>
+        ) : null}
       </ul>
-      <form onSubmit={submit}>
+      <div className="chat-flow__quick-actions" aria-label="quick-prompts">
+        {quickPrompts.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            className="chip-button"
+            onClick={() => onSend(prompt)}
+            disabled={pending}
+          >
+            {prompt}
+          </button>
+        ))}
+      </div>
+      <form onSubmit={submit} className="chat-flow__composer">
         <input
           aria-label="chat-input"
           placeholder="输入你的问题..."
@@ -39,7 +69,7 @@ export function ChatFlow({ messages, pending, onSend }: ChatFlowProps) {
           onChange={(event) => setValue(event.target.value)}
           disabled={pending}
         />
-        <button type="submit" disabled={pending}>
+        <button type="submit" disabled={pending} className="button-primary">
           发送
         </button>
       </form>

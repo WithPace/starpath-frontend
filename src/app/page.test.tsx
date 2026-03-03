@@ -4,20 +4,19 @@ import { describe, expect, it } from "vitest";
 import Home from "./page";
 
 describe("Home", () => {
-  it("shows phase5 role entry links", () => {
+  it("shows multi-role launchboard", () => {
     render(<Home />);
 
-    expect(screen.getByText("StarPath Frontend")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/chat" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/dashboard" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/doctor/chat" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/teacher/chat" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/org-admin/members" })).toBeInTheDocument();
+    expect(screen.getByText("StarPath 多角色工作台")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "家长端 · 对话" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "医生端 · 看板" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "特教老师端 · 对话" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "机构成员管理" })).toBeInTheDocument();
   });
 
-  it("does not show phase4-only wording", () => {
+  it("shows go-live checklist section", () => {
     render(<Home />);
 
-    expect(screen.queryByText("Phase 4 parent MVP routes:")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "上线前检查" })).toBeInTheDocument();
   });
 });

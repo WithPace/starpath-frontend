@@ -8,23 +8,36 @@ type DashboardCardsProps = {
 
 export function DashboardCards({ cards, loading, error }: DashboardCardsProps) {
   if (loading) {
-    return <p>看板加载中...</p>;
+    return <p className="muted-text">看板加载中...</p>;
   }
 
   if (error) {
-    return <p>看板加载失败：{error}</p>;
+    return <p className="runtime-panel__warning">看板加载失败：{error}</p>;
   }
 
   if (cards.length === 0) {
-    return <p>暂无看板数据</p>;
+    return <p className="muted-text">暂无看板数据</p>;
   }
 
   return (
-    <section aria-label="dashboard-cards">
+    <section aria-label="dashboard-cards" className="dashboard-grid">
       {cards.map((card, index) => (
-        <article key={`${card.card_type}-${index}`}>
-          <h3>{card.title}</h3>
-          <p>类型：{card.card_type}</p>
+        <article key={`${card.card_type}-${index}`} className="dashboard-card">
+          <header>
+            <p className="dashboard-card__type">{card.card_type}</p>
+            <h3>{card.title}</h3>
+          </header>
+          <ul>
+            {Object.entries(card)
+              .filter(([key]) => key !== "card_type" && key !== "title")
+              .slice(0, 4)
+              .map(([key, value]) => (
+                <li key={key}>
+                  <span>{key}</span>
+                  <strong>{typeof value === "string" || typeof value === "number" ? String(value) : "..."}</strong>
+                </li>
+              ))}
+          </ul>
         </article>
       ))}
     </section>
