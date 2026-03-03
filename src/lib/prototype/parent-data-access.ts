@@ -109,6 +109,17 @@ export type SaveParentNicknameGateway = {
   updateUserName: (input: { userId: string; name: string }) => Promise<void>;
 };
 
+export type EnsureParentRegistrationGateway = {
+  getSessionUser: () => Promise<SessionUser | null>;
+  upsertUser: (input: UserUpsertInput) => Promise<void>;
+  countActiveParentCareTeams: (userId: string) => Promise<number>;
+};
+
+export type EnsureParentRegistrationResult = {
+  isFirstLogin: boolean;
+  userId: string;
+};
+
 export type UserProfileSnapshot = {
   userId: string;
   name: string | null;
@@ -155,6 +166,20 @@ function readString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
   return normalized ? normalized : null;
+}
+
+async function readSessionUserFromClient(client: SupabaseClient): Promise<SessionUser | null> {
+  const { data, error } = await client.auth.getSession();
+  if (error) {
+    throw new Error(`读取登录会话失败：${error.message}`);
+  }
+  const user = data.session?.user;
+  if (!user) return null;
+  return {
+    id: user.id,
+    phone: user.phone ?? null,
+    name: readString(user.user_metadata?.name) ?? readString(user.user_metadata?.nickname),
+  };
 }
 
 export function resolveBirthDateFromAge(ageRaw: string | undefined, now?: Date | string): string | null {
@@ -327,20 +352,31 @@ export async function saveParentNicknameWithGateway(
   };
 }
 
+export async function ensureParentRegistrationWithGateway(
+  gateway: EnsureParentRegistrationGateway,
+): Promise<EnsureParentRegistrationResult> {
+  const user = await gateway.getSessionUser();
+  if (!user?.id) {
+    throw new Error("请先登录后再完成注册。");
+  }
+
+  await gateway.upsertUser({
+    id: user.id,
+    phone: user.phone,
+    name: user.name,
+  });
+
+  const activeParentLinks = await gateway.countActiveParentCareTeams(user.id);
+  return {
+    isFirstLogin: activeParentLinks === 0,
+    userId: user.id,
+  };
+}
+
 export function buildCreateChildGateway(client: SupabaseClient): CreateChildGateway {
   return {
     async getSessionUser() {
-      const { data, error } = await client.auth.getSession();
-      if (error) {
-        throw new Error(`读取登录会话失败：${error.message}`);
-      }
-      const user = data.session?.user;
-      if (!user) return null;
-      return {
-        id: user.id,
-        phone: user.phone ?? null,
-        name: readString(user.user_metadata?.name) ?? readString(user.user_metadata?.nickname),
-      };
+      return readSessionUserFromClient(client);
     },
     async upsertUser(input) {
       const { error } = await client.from("users").upsert(
@@ -402,6 +438,42 @@ export function buildCreateChildGateway(client: SupabaseClient): CreateChildGate
       if (error) {
         throw new Error(`写入 children_medical 失败：${error.message}`);
       }
+    },
+  };
+}
+
+export function buildEnsureParentRegistrationGateway(
+  client: SupabaseClient,
+): EnsureParentRegistrationGateway {
+  return {
+    async getSessionUser() {
+      return readSessionUserFromClient(client);
+    },
+    async upsertUser(input) {
+      const { error } = await client.from("users").upsert(
+        {
+          id: input.id,
+          phone: input.phone,
+          name: input.name,
+        },
+        { onConflict: "id" },
+      );
+      if (error) {
+        throw new Error(`写入 users 失败：${error.message}`);
+      }
+    },
+    async countActiveParentCareTeams(userId) {
+      const { count, error } = await client
+        .from("care_teams")
+        .select("child_id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("role", "parent")
+        .eq("status", "active");
+
+      if (error) {
+        throw new Error(`读取 care_teams 失败：${error.message}`);
+      }
+      return count ?? 0;
     },
   };
 }
@@ -507,6 +579,12 @@ export async function saveParentNickname(
   nextNameRaw: string,
 ): Promise<{ name: string }> {
   return saveParentNicknameWithGateway(buildSaveParentNicknameGateway(client), nextNameRaw);
+}
+
+export async function ensureParentRegistration(
+  client: SupabaseClient,
+): Promise<EnsureParentRegistrationResult> {
+  return ensureParentRegistrationWithGateway(buildEnsureParentRegistrationGateway(client));
 }
 
 export async function getCurrentUserProfile(

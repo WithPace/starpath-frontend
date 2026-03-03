@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ensureParentRegistration } from "@/lib/prototype/parent-data-access";
 import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
 import { resolveAuthNextPath } from "@/lib/runtime/auth-next";
 import {
@@ -109,10 +110,26 @@ export default function AuthPage() {
       return;
     }
 
-    await refreshState();
-    setMessage("登录成功。");
-    router.replace(nextPath);
-    setPending(false);
+    try {
+      const registration = await ensureParentRegistration(client);
+      await refreshState();
+
+      if (registration.isFirstLogin) {
+        setMessage("首次验证码登录已完成注册，请先创建孩子档案。");
+        router.replace("/create-child");
+      } else {
+        setMessage("登录成功。");
+        router.replace(nextPath);
+      }
+    } catch (registrationError) {
+      setMessage(
+        `登录成功，但注册初始化失败：${
+          registrationError instanceof Error ? registrationError.message : "未知错误"
+        }`,
+      );
+    } finally {
+      setPending(false);
+    }
   };
 
   const submitManual = async (event: FormEvent<HTMLFormElement>) => {

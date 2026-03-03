@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createChildProfileWithGateway,
+  ensureParentRegistrationWithGateway,
   saveParentNicknameWithGateway,
   saveAssessmentWithGateway,
   saveVoiceRecordWithGateway,
   summarizeAssessmentAnswers,
   type CreateChildGateway,
   type CreateChildInput,
+  type EnsureParentRegistrationGateway,
   type SaveParentNicknameGateway,
   type SaveAssessmentGateway,
   type SaveVoiceGateway,
@@ -116,6 +118,17 @@ function buildNicknameGateway(
   };
 }
 
+function buildEnsureRegistrationGateway(
+  overrides?: Partial<EnsureParentRegistrationGateway>,
+): EnsureParentRegistrationGateway {
+  return {
+    getSessionUser: vi.fn(async () => ({ id: "user-1", phone: "13800000000", name: "家长A" })),
+    upsertUser: vi.fn(async () => {}),
+    countActiveParentCareTeams: vi.fn(async () => 0),
+    ...overrides,
+  };
+}
+
 describe("summarizeAssessmentAnswers", () => {
   it("calculates score and risk level from answers", () => {
     const result = summarizeAssessmentAnswers(["否", "否", "偶尔"]);
@@ -215,5 +228,51 @@ describe("saveParentNicknameWithGateway", () => {
     await expect(saveParentNicknameWithGateway(gateway, "妈妈")).rejects.toThrow(
       "请先登录后再修改昵称。",
     );
+  });
+});
+
+describe("ensureParentRegistrationWithGateway", () => {
+  it("throws when session user is missing", async () => {
+    const gateway = buildEnsureRegistrationGateway({
+      getSessionUser: vi.fn(async () => null),
+    });
+
+    await expect(ensureParentRegistrationWithGateway(gateway)).rejects.toThrow(
+      "请先登录后再完成注册。",
+    );
+    expect(gateway.upsertUser).not.toHaveBeenCalled();
+    expect(gateway.countActiveParentCareTeams).not.toHaveBeenCalled();
+  });
+
+  it("marks first login when parent has no active child links", async () => {
+    const gateway = buildEnsureRegistrationGateway({
+      countActiveParentCareTeams: vi.fn(async () => 0),
+    });
+
+    const result = await ensureParentRegistrationWithGateway(gateway);
+
+    expect(gateway.upsertUser).toHaveBeenCalledWith({
+      id: "user-1",
+      phone: "13800000000",
+      name: "家长A",
+    });
+    expect(gateway.countActiveParentCareTeams).toHaveBeenCalledWith("user-1");
+    expect(result).toEqual({
+      isFirstLogin: true,
+      userId: "user-1",
+    });
+  });
+
+  it("marks returning login when parent already has active child links", async () => {
+    const gateway = buildEnsureRegistrationGateway({
+      countActiveParentCareTeams: vi.fn(async () => 2),
+    });
+
+    const result = await ensureParentRegistrationWithGateway(gateway);
+
+    expect(result).toEqual({
+      isFirstLogin: false,
+      userId: "user-1",
+    });
   });
 });
