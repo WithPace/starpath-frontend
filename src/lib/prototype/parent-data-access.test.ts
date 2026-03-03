@@ -2,8 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createChildProfileWithGateway,
+  saveAssessmentWithGateway,
+  saveVoiceRecordWithGateway,
+  summarizeAssessmentAnswers,
   type CreateChildGateway,
   type CreateChildInput,
+  type SaveAssessmentGateway,
+  type SaveVoiceGateway,
 } from "./parent-data-access";
 
 function buildInput(overrides?: Partial<CreateChildInput>): CreateChildInput {
@@ -82,5 +87,97 @@ describe("createChildProfileWithGateway", () => {
 
     expect(gateway.upsertParentCareTeam).not.toHaveBeenCalled();
     expect(gateway.insertMedical).not.toHaveBeenCalled();
+  });
+});
+
+function buildAssessmentGateway(overrides?: Partial<SaveAssessmentGateway>): SaveAssessmentGateway {
+  return {
+    insertAssessment: vi.fn(async () => ({ id: "assessment-1" })),
+    ...overrides,
+  };
+}
+
+function buildVoiceGateway(overrides?: Partial<SaveVoiceGateway>): SaveVoiceGateway {
+  return {
+    insertLifeRecord: vi.fn(async () => ({ id: "life-1" })),
+    ...overrides,
+  };
+}
+
+describe("summarizeAssessmentAnswers", () => {
+  it("calculates score and risk level from answers", () => {
+    const result = summarizeAssessmentAnswers(["否", "否", "偶尔"]);
+
+    expect(result).toEqual({
+      totalQuestions: 3,
+      riskAnswers: 2,
+      score: 67,
+      riskLevel: "high",
+    });
+  });
+});
+
+describe("saveAssessmentWithGateway", () => {
+  it("persists assessment payload and returns assessment id", async () => {
+    const gateway = buildAssessmentGateway();
+
+    const result = await saveAssessmentWithGateway(gateway, {
+      childId: "child-1",
+      answers: ["是", "否", "偶尔"],
+      questionSet: "mchat-lite-v1",
+    });
+
+    expect(gateway.insertAssessment).toHaveBeenCalledWith({
+      childId: "child-1",
+      type: "mchat_screening",
+      riskLevel: "medium",
+      result: {
+        question_set: "mchat-lite-v1",
+        answers: ["是", "否", "偶尔"],
+        total_questions: 3,
+        risk_answers: 1,
+        score: 33,
+      },
+    });
+    expect(result).toEqual({
+      assessmentId: "assessment-1",
+      riskLevel: "medium",
+      score: 33,
+    });
+  });
+
+  it("throws when childId is missing", async () => {
+    const gateway = buildAssessmentGateway();
+
+    await expect(
+      saveAssessmentWithGateway(gateway, {
+        childId: "",
+        answers: ["是"],
+        questionSet: "mchat-lite-v1",
+      }),
+    ).rejects.toThrow("缺少 child_id，无法保存评估结果。");
+  });
+});
+
+describe("saveVoiceRecordWithGateway", () => {
+  it("persists voice note as life_record behavior_event", async () => {
+    const gateway = buildVoiceGateway();
+
+    const result = await saveVoiceRecordWithGateway(gateway, {
+      childId: "child-1",
+      note: "今天切换任务时有哭闹，2 分钟后恢复",
+      emotionIntensity: 3,
+    });
+
+    expect(gateway.insertLifeRecord).toHaveBeenCalledWith({
+      childId: "child-1",
+      type: "behavior_event",
+      summary: "今天切换任务时有哭闹，2 分钟后恢复",
+      content: {
+        source: "voice_record_page",
+        emotion_intensity: 3,
+      },
+    });
+    expect(result).toEqual({ lifeRecordId: "life-1" });
   });
 });

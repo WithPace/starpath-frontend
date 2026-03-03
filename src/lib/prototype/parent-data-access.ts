@@ -51,6 +51,73 @@ type CreateChildOptions = {
   now?: Date | string;
 };
 
+export type AssessmentRiskLevel = "low" | "medium" | "high";
+
+export type AssessmentSummary = {
+  totalQuestions: number;
+  riskAnswers: number;
+  score: number;
+  riskLevel: AssessmentRiskLevel;
+};
+
+export type SaveAssessmentInput = {
+  childId: string;
+  answers: string[];
+  questionSet: string;
+};
+
+type AssessmentInsertInput = {
+  childId: string;
+  type: string;
+  riskLevel: AssessmentRiskLevel;
+  result: Record<string, unknown>;
+};
+
+export type SaveAssessmentGateway = {
+  insertAssessment: (input: AssessmentInsertInput) => Promise<{ id: string }>;
+};
+
+export type SaveAssessmentResult = {
+  assessmentId: string;
+  score: number;
+  riskLevel: AssessmentRiskLevel;
+};
+
+export type SaveVoiceInput = {
+  childId: string;
+  note: string;
+  emotionIntensity?: number;
+};
+
+type LifeRecordInsertInput = {
+  childId: string;
+  type: "behavior_event";
+  summary: string;
+  content: Record<string, unknown>;
+};
+
+export type SaveVoiceGateway = {
+  insertLifeRecord: (input: LifeRecordInsertInput) => Promise<{ id: string }>;
+};
+
+export type SaveVoiceResult = {
+  lifeRecordId: string;
+};
+
+export type AssessmentHistoryRow = {
+  id: string;
+  created_at: string | null;
+  risk_level: string | null;
+  result: Record<string, unknown> | null;
+};
+
+export type VoiceHistoryRow = {
+  id: string;
+  occurred_at: string | null;
+  summary: string | null;
+  content: Record<string, unknown> | null;
+};
+
 function normalizeNow(now?: Date | string): Date {
   if (!now) return new Date();
   if (now instanceof Date) return now;
@@ -75,6 +142,25 @@ export function resolveBirthDateFromAge(ageRaw: string | undefined, now?: Date |
     Date.UTC(base.getUTCFullYear() - parsed, base.getUTCMonth(), base.getUTCDate()),
   );
   return birth.toISOString().slice(0, 10);
+}
+
+function normalizeRiskLevel(riskAnswers: number, totalQuestions: number): AssessmentRiskLevel {
+  const ratio = totalQuestions > 0 ? riskAnswers / totalQuestions : 0;
+  if (ratio >= 0.6) return "high";
+  if (ratio >= 0.3) return "medium";
+  return "low";
+}
+
+export function summarizeAssessmentAnswers(answers: string[]): AssessmentSummary {
+  const totalQuestions = answers.length;
+  const riskAnswers = answers.filter((value) => value === "否").length;
+  const score = totalQuestions > 0 ? Math.round((riskAnswers / totalQuestions) * 100) : 0;
+  return {
+    totalQuestions,
+    riskAnswers,
+    score,
+    riskLevel: normalizeRiskLevel(riskAnswers, totalQuestions),
+  };
 }
 
 export async function createChildProfileWithGateway(
@@ -125,6 +211,68 @@ export async function createChildProfileWithGateway(
   return {
     childId: child.id,
     warnings,
+  };
+}
+
+export async function saveAssessmentWithGateway(
+  gateway: SaveAssessmentGateway,
+  input: SaveAssessmentInput,
+): Promise<SaveAssessmentResult> {
+  const childId = input.childId.trim();
+  if (!childId) {
+    throw new Error("缺少 child_id，无法保存评估结果。");
+  }
+  if (input.answers.length === 0) {
+    throw new Error("评估答案为空，无法保存。");
+  }
+
+  const summary = summarizeAssessmentAnswers(input.answers);
+
+  const record = await gateway.insertAssessment({
+    childId,
+    type: "mchat_screening",
+    riskLevel: summary.riskLevel,
+    result: {
+      question_set: input.questionSet,
+      answers: input.answers,
+      total_questions: summary.totalQuestions,
+      risk_answers: summary.riskAnswers,
+      score: summary.score,
+    },
+  });
+
+  return {
+    assessmentId: record.id,
+    score: summary.score,
+    riskLevel: summary.riskLevel,
+  };
+}
+
+export async function saveVoiceRecordWithGateway(
+  gateway: SaveVoiceGateway,
+  input: SaveVoiceInput,
+): Promise<SaveVoiceResult> {
+  const childId = input.childId.trim();
+  if (!childId) {
+    throw new Error("缺少 child_id，无法保存记录。");
+  }
+  const note = input.note.trim();
+  if (!note) {
+    throw new Error("请先填写记录内容。");
+  }
+
+  const record = await gateway.insertLifeRecord({
+    childId,
+    type: "behavior_event",
+    summary: note,
+    content: {
+      source: "voice_record_page",
+      emotion_intensity: input.emotionIntensity ?? null,
+    },
+  });
+
+  return {
+    lifeRecordId: record.id,
   };
 }
 
@@ -207,10 +355,113 @@ export function buildCreateChildGateway(client: SupabaseClient): CreateChildGate
   };
 }
 
+export function buildSaveAssessmentGateway(client: SupabaseClient): SaveAssessmentGateway {
+  return {
+    async insertAssessment(input) {
+      const { data, error } = await client
+        .from("assessments")
+        .insert({
+          child_id: input.childId,
+          type: input.type,
+          result: input.result,
+          risk_level: input.riskLevel,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        throw new Error(`写入 assessments 失败：${error.message}`);
+      }
+
+      return {
+        id: (data as { id: string }).id,
+      };
+    },
+  };
+}
+
+export function buildSaveVoiceGateway(client: SupabaseClient): SaveVoiceGateway {
+  return {
+    async insertLifeRecord(input) {
+      const { data, error } = await client
+        .from("life_records")
+        .insert({
+          child_id: input.childId,
+          type: input.type,
+          summary: input.summary,
+          content: input.content,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        throw new Error(`写入 life_records 失败：${error.message}`);
+      }
+
+      return {
+        id: (data as { id: string }).id,
+      };
+    },
+  };
+}
+
 export async function createChildProfile(
   client: SupabaseClient,
   input: CreateChildInput,
   options?: CreateChildOptions,
 ): Promise<CreateChildResult> {
   return createChildProfileWithGateway(buildCreateChildGateway(client), input, options);
+}
+
+export async function saveAssessment(
+  client: SupabaseClient,
+  input: SaveAssessmentInput,
+): Promise<SaveAssessmentResult> {
+  return saveAssessmentWithGateway(buildSaveAssessmentGateway(client), input);
+}
+
+export async function saveVoiceRecord(
+  client: SupabaseClient,
+  input: SaveVoiceInput,
+): Promise<SaveVoiceResult> {
+  return saveVoiceRecordWithGateway(buildSaveVoiceGateway(client), input);
+}
+
+export async function listRecentAssessments(
+  client: SupabaseClient,
+  childId: string,
+  limit = 5,
+): Promise<AssessmentHistoryRow[]> {
+  const { data, error } = await client
+    .from("assessments")
+    .select("id,created_at,risk_level,result")
+    .eq("child_id", childId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`读取 assessments 失败：${error.message}`);
+  }
+
+  return ((data as AssessmentHistoryRow[] | null) ?? []);
+}
+
+export async function listRecentVoiceRecords(
+  client: SupabaseClient,
+  childId: string,
+  limit = 5,
+): Promise<VoiceHistoryRow[]> {
+  const { data, error } = await client
+    .from("life_records")
+    .select("id,occurred_at,summary,content")
+    .eq("child_id", childId)
+    .eq("type", "behavior_event")
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`读取 life_records 失败：${error.message}`);
+  }
+
+  return ((data as VoiceHistoryRow[] | null) ?? []);
 }
