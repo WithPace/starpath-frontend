@@ -53,6 +53,24 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
+## Playwright MCP
+
+This repo now includes local Playwright MCP integration.
+
+1. Verify installation:
+
+```bash
+pnpm mcp:playwright:help
+```
+
+2. Start MCP server (stdio):
+
+```bash
+pnpm mcp:playwright
+```
+
+Client config can reference `.mcp.json` in repo root.
+
 ## Runtime Auth and Child Context
 
 1. Open `/auth`.
@@ -79,9 +97,12 @@ Gate includes:
 To execute authenticated live business-chain test (not mock-only), set these env keys:
 
 - `RUN_E2E_LIVE=1`
-- `E2E_LIVE_PHONE` (E.164 format, example: `+8613800138000`)
-- `E2E_LIVE_OTP` (fresh SMS code for this run)
 - `E2E_LIVE_PARENT_CHILD_ID`
+- auth mode A (OTP):
+  - `E2E_LIVE_PHONE` (E.164 format, example: `+8613800138000`)
+  - `E2E_LIVE_OTP` (fresh SMS code for this run)
+- auth mode B (token):
+  - `E2E_LIVE_ACCESS_TOKEN`
 - optional: `E2E_LIVE_CHAT_MESSAGE`
 - optional: `E2E_LIVE_PARENT_NICKNAME` (used for settings nickname save assertion)
 - optional: `E2E_LIVE_TRIGGER_OTP_SEND` (`1` means test will click "发送验证码"; default `0`)
