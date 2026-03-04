@@ -14,10 +14,29 @@ test.describe("@live parent full chain", () => {
     await page.goto("/auth");
 
     await page.getByLabel("手机号").fill(config.phone ?? "");
-    await page.getByRole("button", { name: "发送验证码" }).click();
+    if (config.triggerOtpSend) {
+      await page.getByRole("button", { name: "发送验证码" }).click();
+    }
     await page.getByLabel("验证码").fill(config.otp ?? "");
     await page.getByRole("button", { name: "验证码登录" }).click();
-    await expect(page.getByText("当前会话：")).not.toContainText("未登录");
+    await expect
+      .poll(
+        async () => {
+          const sessionText = (await page.getByText("当前会话：").first().textContent()) ?? "";
+          if (!sessionText.includes("未登录")) {
+            return "ok";
+          }
+          const errorText = await page
+            .locator("p")
+            .filter({ hasText: /^验证码登录失败：/ })
+            .first()
+            .textContent()
+            .catch(() => null);
+          return errorText ?? "pending";
+        },
+        { timeout: 12_000, message: "waiting for otp login result" },
+      )
+      .toBe("ok");
 
     await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
     await page.getByRole("button", { name: "保存手动配置" }).click();

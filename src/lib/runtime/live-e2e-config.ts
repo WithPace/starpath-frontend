@@ -8,6 +8,7 @@ type LiveE2EConfig = {
   parentChildId: string | null;
   chatMessage: string;
   parentNickname: string;
+  triggerOtpSend: boolean;
 };
 
 const REQUIRED_KEYS = [
@@ -18,6 +19,10 @@ const REQUIRED_KEYS = [
 
 function normalize(value: string | undefined): string {
   return (value ?? "").trim();
+}
+
+function normalizeBoolean(value: string | undefined): boolean {
+  return normalize(value) === "1";
 }
 
 export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
@@ -31,6 +36,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
       parentChildId: null,
       chatMessage: "请基于当前孩子情况给出今天可执行的训练建议。",
       parentNickname: "星途家长-自动化",
+      triggerOtpSend: false,
     };
   }
 
@@ -49,6 +55,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
     parentChildId: normalize(env.E2E_LIVE_PARENT_CHILD_ID) || null,
     chatMessage: normalize(env.E2E_LIVE_CHAT_MESSAGE) || "请基于当前孩子情况给出今天可执行的训练建议。",
     parentNickname: normalize(env.E2E_LIVE_PARENT_NICKNAME) || "星途家长-自动化",
+    triggerOtpSend: normalizeBoolean(env.E2E_LIVE_TRIGGER_OTP_SEND),
   };
 }
 

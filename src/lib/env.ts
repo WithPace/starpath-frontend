@@ -14,10 +14,21 @@ function requireEnv(env: RawEnv, name: string): string {
   return value;
 }
 
-export function readFrontendEnv(env: RawEnv = process.env): FrontendEnv {
+function readDefaultNextPublicEnv(): RawEnv {
+  // In Next.js client bundles, dynamic access like process.env[name] may be empty.
+  // Read NEXT_PUBLIC vars via static property access so Turbopack can inline values.
   return {
-    apiBaseUrl: requireEnv(env, "NEXT_PUBLIC_API_BASE_URL"),
-    supabaseUrl: requireEnv(env, "NEXT_PUBLIC_SUPABASE_URL"),
-    supabaseAnonKey: requireEnv(env, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  };
+}
+
+export function readFrontendEnv(env?: RawEnv): FrontendEnv {
+  const source = env ?? readDefaultNextPublicEnv();
+  return {
+    apiBaseUrl: requireEnv(source, "NEXT_PUBLIC_API_BASE_URL"),
+    supabaseUrl: requireEnv(source, "NEXT_PUBLIC_SUPABASE_URL"),
+    supabaseAnonKey: requireEnv(source, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   };
 }

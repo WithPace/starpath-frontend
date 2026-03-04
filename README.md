@@ -84,6 +84,7 @@ To execute authenticated live business-chain test (not mock-only), set these env
 - `E2E_LIVE_PARENT_CHILD_ID`
 - optional: `E2E_LIVE_CHAT_MESSAGE`
 - optional: `E2E_LIVE_PARENT_NICKNAME` (used for settings nickname save assertion)
+- optional: `E2E_LIVE_TRIGGER_OTP_SEND` (`1` means test will click "发送验证码"; default `0`)
 
 Run:
 

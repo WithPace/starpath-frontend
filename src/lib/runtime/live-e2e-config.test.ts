@@ -13,6 +13,7 @@ describe("getLiveE2EConfig", () => {
 
     expect(config.enabled).toBe(false);
     expect(config.missing).toEqual([]);
+    expect(config.triggerOtpSend).toBe(false);
   });
 
   it("lists missing keys when live gate is on", () => {
@@ -29,6 +30,7 @@ describe("getLiveE2EConfig", () => {
       "E2E_LIVE_OTP",
       "E2E_LIVE_PARENT_CHILD_ID",
     ]);
+    expect(config.triggerOtpSend).toBe(false);
   });
 
   it("returns normalized live credentials when all keys exist", () => {
@@ -39,6 +41,7 @@ describe("getLiveE2EConfig", () => {
       E2E_LIVE_PARENT_CHILD_ID: " 11111111-1111-1111-1111-111111111111 ",
       E2E_LIVE_CHAT_MESSAGE: " hello ",
       E2E_LIVE_PARENT_NICKNAME: " 星途家长 ",
+      E2E_LIVE_TRIGGER_OTP_SEND: "1",
     });
 
     expect(config.enabled).toBe(true);
@@ -48,6 +51,7 @@ describe("getLiveE2EConfig", () => {
     expect(config.parentChildId).toBe("11111111-1111-1111-1111-111111111111");
     expect(config.chatMessage).toBe("hello");
     expect(config.parentNickname).toBe("星途家长");
+    expect(config.triggerOtpSend).toBe(true);
   });
 
   it("uses fallback nickname when live nickname is not provided", () => {
@@ -59,5 +63,6 @@ describe("getLiveE2EConfig", () => {
     });
 
     expect(config.parentNickname).toBe("星途家长-自动化");
+    expect(config.triggerOtpSend).toBe(false);
   });
 });
