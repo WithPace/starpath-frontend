@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { assertLiveE2EConfig, getLiveE2EConfig } from "@/lib/runtime/live-e2e-config";
+import { resolveOtpLoginWaitState } from "@/lib/runtime/otp-login-state";
 
 const liveConfig = getLiveE2EConfig();
 
@@ -22,17 +23,17 @@ test.describe("@live parent full chain", () => {
     await expect
       .poll(
         async () => {
-          const sessionText = (await page.getByText("当前会话：").first().textContent()) ?? "";
-          if (!sessionText.includes("未登录")) {
-            return "ok";
-          }
-          const errorText = await page
-            .locator("p")
-            .filter({ hasText: /^验证码登录失败：/ })
-            .first()
-            .textContent()
-            .catch(() => null);
-          return errorText ?? "pending";
+          const sessionStatusLocator = page.getByText("当前会话：").first();
+          const sessionStatusText =
+            (await sessionStatusLocator.count()) > 0 ? await sessionStatusLocator.textContent() : null;
+          const otpErrorLocator = page.locator("p").filter({ hasText: /^验证码登录失败：/ }).first();
+          const otpErrorText = (await otpErrorLocator.count()) > 0 ? await otpErrorLocator.textContent() : null;
+
+          return resolveOtpLoginWaitState({
+            currentUrl: page.url(),
+            sessionStatusText,
+            otpErrorText,
+          });
         },
         { timeout: 12_000, message: "waiting for otp login result" },
       )
