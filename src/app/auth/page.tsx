@@ -8,6 +8,10 @@ import { ensureParentRegistration } from "@/lib/prototype/parent-data-access";
 import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
 import { resolveAuthNextPath } from "@/lib/runtime/auth-next";
 import {
+  buildOtpResendCooldownUntilMs,
+  getOtpResendRemainingSeconds,
+} from "@/lib/runtime/otp-resend";
+import {
   clearManualRuntimeCredentials,
   persistManualRuntimeCredentials,
   readManualRuntimeCredentialsFromWindow,
@@ -24,10 +28,31 @@ export default function AuthPage() {
   const [sessionIdentity, setSessionIdentity] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [otpCooldownUntilMs, setOtpCooldownUntilMs] = useState<number | null>(null);
+  const [otpRemainingSeconds, setOtpRemainingSeconds] = useState(0);
   const nextPath =
     typeof window === "undefined"
       ? "/"
       : resolveAuthNextPath(new URLSearchParams(window.location.search).get("next"));
+
+  useEffect(() => {
+    if (!otpCooldownUntilMs) {
+      setOtpRemainingSeconds(0);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const remaining = getOtpResendRemainingSeconds(otpCooldownUntilMs);
+      setOtpRemainingSeconds(remaining);
+      if (remaining === 0) {
+        setOtpCooldownUntilMs(null);
+      }
+    };
+
+    updateRemaining();
+    const timerId = window.setInterval(updateRemaining, 250);
+    return () => window.clearInterval(timerId);
+  }, [otpCooldownUntilMs]);
 
   useEffect(() => {
     if (!client) return;
@@ -65,6 +90,10 @@ export default function AuthPage() {
       setMessage("请先输入手机号。");
       return;
     }
+    if (otpRemainingSeconds > 0) {
+      setMessage(`请在 ${otpRemainingSeconds} 秒后重试发送验证码。`);
+      return;
+    }
 
     setPending(true);
     setMessage(null);
@@ -81,6 +110,7 @@ export default function AuthPage() {
       return;
     }
 
+    setOtpCooldownUntilMs(buildOtpResendCooldownUntilMs());
     setMessage("验证码已发送，请查收短信。");
     setPending(false);
   };
@@ -216,10 +246,10 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => void sendOtp()}
-                disabled={pending}
+                disabled={pending || otpRemainingSeconds > 0}
                 className="button-secondary"
               >
-                发送验证码
+                {otpRemainingSeconds > 0 ? `重新发送(${otpRemainingSeconds}s)` : "发送验证码"}
               </button>
               <button type="submit" disabled={pending} className="button-primary">
                 验证码登录
