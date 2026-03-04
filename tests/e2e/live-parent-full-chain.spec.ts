@@ -39,8 +39,10 @@ test.describe("@live parent full chain", () => {
       )
       .toBe("ok");
 
-    await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
-    await page.getByRole("button", { name: "保存手动配置" }).click();
+    if (new URL(page.url()).pathname === "/auth") {
+      await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
+      await page.getByRole("button", { name: "保存手动配置" }).click();
+    }
 
     await page.goto("/chat");
     await expect(page).toHaveURL(/\/chat$/);
