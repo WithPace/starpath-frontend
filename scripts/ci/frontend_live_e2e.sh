@@ -12,6 +12,33 @@ is_invalid_anon_key() {
   return 1
 }
 
+preserve_keys=(
+  RUN_E2E_LIVE
+  E2E_LIVE_PHONE
+  E2E_LIVE_OTP
+  E2E_LIVE_PARENT_CHILD_ID
+  E2E_LIVE_CHAT_MESSAGE
+  E2E_LIVE_PARENT_NICKNAME
+  E2E_LIVE_TRIGGER_OTP_SEND
+  NEXT_PUBLIC_API_BASE_URL
+  NEXT_PUBLIC_SUPABASE_URL
+  NEXT_PUBLIC_SUPABASE_ANON_KEY
+  BACKEND_ENV_FILE
+  SUPABASE_URL
+  SUPABASE_ANON_KEY
+)
+preserve_set=()
+preserve_values=()
+for key in "${preserve_keys[@]}"; do
+  if [ "${!key+x}" = "x" ]; then
+    preserve_set+=("1")
+    preserve_values+=("${!key}")
+  else
+    preserve_set+=("0")
+    preserve_values+=("")
+  fi
+done
+
 if [ -f ".env.local" ]; then
   set -a
   # shellcheck disable=SC1091
@@ -26,6 +53,14 @@ if [ -f "$backend_env_file" ]; then
   source "$backend_env_file"
   set +a
 fi
+
+idx=0
+for key in "${preserve_keys[@]}"; do
+  if [ "${preserve_set[$idx]}" = "1" ]; then
+    export "$key=${preserve_values[$idx]}"
+  fi
+  idx=$((idx + 1))
+done
 
 if [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && [ -n "${SUPABASE_URL:-}" ]; then
   export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
