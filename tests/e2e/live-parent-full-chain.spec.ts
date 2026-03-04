@@ -15,34 +15,41 @@ test.describe("@live parent full chain", () => {
 
     await page.goto("/auth");
 
-    await page.getByLabel("手机号").fill(config.phone ?? "");
-    if (config.triggerOtpSend) {
-      await page.getByRole("button", { name: "发送验证码" }).click();
-    }
-    await page.getByLabel("验证码").fill(config.otp ?? "");
-    await page.getByRole("button", { name: "验证码登录" }).click();
-    await expect
-      .poll(
-        async () => {
-          const sessionStatusLocator = page.getByText("当前会话：").first();
-          const sessionStatusText =
-            (await sessionStatusLocator.count()) > 0 ? await sessionStatusLocator.textContent() : null;
-          const otpErrorLocator = page.locator("p").filter({ hasText: /^验证码登录失败：/ }).first();
-          const otpErrorText = (await otpErrorLocator.count()) > 0 ? await otpErrorLocator.textContent() : null;
-
-          return resolveOtpLoginWaitState({
-            currentUrl: page.url(),
-            sessionStatusText,
-            otpErrorText,
-          });
-        },
-        { timeout: 12_000, message: "waiting for otp login result" },
-      )
-      .toBe("ok");
-
-    if (new URL(page.url()).pathname === "/auth") {
+    if (config.accessToken) {
+      await page.getByLabel("Access Token").fill(config.accessToken);
       await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
       await page.getByRole("button", { name: "保存手动配置" }).click();
+      await expect(page.getByText("手动运行时配置已保存。")).toBeVisible();
+    } else {
+      await page.getByLabel("手机号").fill(config.phone ?? "");
+      if (config.triggerOtpSend) {
+        await page.getByRole("button", { name: "发送验证码" }).click();
+      }
+      await page.getByLabel("验证码").fill(config.otp ?? "");
+      await page.getByRole("button", { name: "验证码登录" }).click();
+      await expect
+        .poll(
+          async () => {
+            const sessionStatusLocator = page.getByText("当前会话：").first();
+            const sessionStatusText =
+              (await sessionStatusLocator.count()) > 0 ? await sessionStatusLocator.textContent() : null;
+            const otpErrorLocator = page.locator("p").filter({ hasText: /^验证码登录失败：/ }).first();
+            const otpErrorText = (await otpErrorLocator.count()) > 0 ? await otpErrorLocator.textContent() : null;
+
+            return resolveOtpLoginWaitState({
+              currentUrl: page.url(),
+              sessionStatusText,
+              otpErrorText,
+            });
+          },
+          { timeout: 12_000, message: "waiting for otp login result" },
+        )
+        .toBe("ok");
+
+      if (new URL(page.url()).pathname === "/auth") {
+        await page.getByLabel("Child ID").fill(config.parentChildId ?? "");
+        await page.getByRole("button", { name: "保存手动配置" }).click();
+      }
     }
 
     await page.goto("/chat");

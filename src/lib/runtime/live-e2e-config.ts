@@ -5,17 +5,12 @@ type LiveE2EConfig = {
   missing: string[];
   phone: string | null;
   otp: string | null;
+  accessToken: string | null;
   parentChildId: string | null;
   chatMessage: string;
   parentNickname: string;
   triggerOtpSend: boolean;
 };
-
-const REQUIRED_KEYS = [
-  "E2E_LIVE_PHONE",
-  "E2E_LIVE_OTP",
-  "E2E_LIVE_PARENT_CHILD_ID",
-] as const;
 
 function normalize(value: string | undefined): string {
   return (value ?? "").trim();
@@ -33,6 +28,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
       missing: [],
       phone: null,
       otp: null,
+      accessToken: null,
       parentChildId: null,
       chatMessage: "请基于当前孩子情况给出今天可执行的训练建议。",
       parentNickname: "星途家长-自动化",
@@ -40,10 +36,17 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
     };
   }
 
+  const accessToken = normalize(env.E2E_LIVE_ACCESS_TOKEN);
   const missing: string[] = [];
-  for (const key of REQUIRED_KEYS) {
-    if (!normalize(env[key])) {
-      missing.push(key);
+  if (!normalize(env.E2E_LIVE_PARENT_CHILD_ID)) {
+    missing.push("E2E_LIVE_PARENT_CHILD_ID");
+  }
+  if (!accessToken) {
+    if (!normalize(env.E2E_LIVE_PHONE)) {
+      missing.push("E2E_LIVE_PHONE");
+    }
+    if (!normalize(env.E2E_LIVE_OTP)) {
+      missing.push("E2E_LIVE_OTP");
     }
   }
 
@@ -52,6 +55,7 @@ export function getLiveE2EConfig(env: EnvInput = process.env): LiveE2EConfig {
     missing,
     phone: normalize(env.E2E_LIVE_PHONE) || null,
     otp: normalize(env.E2E_LIVE_OTP) || null,
+    accessToken: accessToken || null,
     parentChildId: normalize(env.E2E_LIVE_PARENT_CHILD_ID) || null,
     chatMessage: normalize(env.E2E_LIVE_CHAT_MESSAGE) || "请基于当前孩子情况给出今天可执行的训练建议。",
     parentNickname: normalize(env.E2E_LIVE_PARENT_NICKNAME) || "星途家长-自动化",

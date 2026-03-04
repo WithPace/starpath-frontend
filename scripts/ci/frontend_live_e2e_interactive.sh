@@ -56,4 +56,30 @@ if [[ ! "$live_otp" =~ ^[0-9]{6}$ ]]; then
   exit 1
 fi
 
-RUN_E2E_LIVE=1 E2E_LIVE_TRIGGER_OTP_SEND=0 E2E_LIVE_OTP="$live_otp" bash scripts/ci/frontend_live_e2e.sh
+echo "verifying otp via supabase auth api ..."
+verify_resp="$(mktemp)"
+verify_code="$(curl -sS -o "$verify_resp" -w "%{http_code}" \
+  "${NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify" \
+  -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "{\"phone\":\"${E2E_LIVE_PHONE}\",\"token\":\"${live_otp}\",\"type\":\"sms\"}")"
+
+if [ "$verify_code" != "200" ]; then
+  echo "otp verify failed: http=$verify_code body=$(cat "$verify_resp")"
+  rm -f "$verify_resp"
+  exit 1
+fi
+
+live_access_token="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.access_token || "").trim());' "$verify_resp")"
+rm -f "$verify_resp"
+
+if [ -z "$live_access_token" ]; then
+  echo "otp verify response missing access_token"
+  exit 1
+fi
+
+RUN_E2E_LIVE=1 \
+E2E_LIVE_TRIGGER_OTP_SEND=0 \
+E2E_LIVE_OTP="$live_otp" \
+E2E_LIVE_ACCESS_TOKEN="$live_access_token" \
+bash scripts/ci/frontend_live_e2e.sh

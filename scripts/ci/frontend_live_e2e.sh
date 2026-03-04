@@ -16,6 +16,7 @@ preserve_keys=(
   RUN_E2E_LIVE
   E2E_LIVE_PHONE
   E2E_LIVE_OTP
+  E2E_LIVE_ACCESS_TOKEN
   E2E_LIVE_PARENT_CHILD_ID
   E2E_LIVE_CHAT_MESSAGE
   E2E_LIVE_PARENT_NICKNAME
@@ -105,23 +106,24 @@ if [ "${RUN_E2E_LIVE:-0}" != "1" ]; then
   exit 0
 fi
 
-required_keys=(
-  E2E_LIVE_PHONE
-  E2E_LIVE_OTP
-  E2E_LIVE_PARENT_CHILD_ID
-)
-
 missing=()
-for key in "${required_keys[@]}"; do
-  value="${!key:-}"
-  if [ -z "${value}" ]; then
-    missing+=("${key}")
+if [ -z "${E2E_LIVE_PARENT_CHILD_ID:-}" ]; then
+  missing+=("E2E_LIVE_PARENT_CHILD_ID")
+fi
+if [ -z "${E2E_LIVE_ACCESS_TOKEN:-}" ]; then
+  if [ -z "${E2E_LIVE_PHONE:-}" ]; then
+    missing+=("E2E_LIVE_PHONE")
   fi
-done
+  if [ -z "${E2E_LIVE_OTP:-}" ]; then
+    missing+=("E2E_LIVE_OTP")
+  fi
+fi
 
 if [ "${#missing[@]}" -gt 0 ]; then
   echo "missing live e2e env keys: ${missing[*]}"
-  echo "set required keys in shell or .env.local before running live gate"
+  echo "set E2E_LIVE_PARENT_CHILD_ID and one auth mode:"
+  echo "  - otp mode: E2E_LIVE_PHONE + E2E_LIVE_OTP"
+  echo "  - token mode: E2E_LIVE_ACCESS_TOKEN"
   exit 1
 fi
 
