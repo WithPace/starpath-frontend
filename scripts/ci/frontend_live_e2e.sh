@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+is_invalid_anon_key() {
+  local key="${1:-}"
+  if [ -z "$key" ] || [ "$key" = "replace-with-anon-key" ] || [ "$key" = "++" ]; then
+    return 0
+  fi
+  if [[ ! "$key" =~ ^[^.]+\.[^.]+\.[^.]+$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
 if [ -f ".env.local" ]; then
   set -a
   # shellcheck disable=SC1091
@@ -22,7 +33,7 @@ fi
 if [ -z "${NEXT_PUBLIC_API_BASE_URL:-}" ] && [ -n "${SUPABASE_URL:-}" ]; then
   export NEXT_PUBLIC_API_BASE_URL="${SUPABASE_URL%/}/functions/v1/orchestrator"
 fi
-if [ -z "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ] || [ "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" = "replace-with-anon-key" ]; then
+if is_invalid_anon_key "${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}"; then
   if [ -n "${SUPABASE_ANON_KEY:-}" ]; then
     export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
   fi
@@ -48,8 +59,8 @@ if [ "${#frontend_missing[@]}" -gt 0 ]; then
   exit 1
 fi
 
-if [ "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" = "replace-with-anon-key" ]; then
-  echo "invalid NEXT_PUBLIC_SUPABASE_ANON_KEY: still placeholder"
+if is_invalid_anon_key "${NEXT_PUBLIC_SUPABASE_ANON_KEY}"; then
+  echo "invalid NEXT_PUBLIC_SUPABASE_ANON_KEY: empty/placeholder/malformed"
   echo "set real anon key in .env.local or BACKEND_ENV_FILE"
   exit 1
 fi

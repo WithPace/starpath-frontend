@@ -92,6 +92,12 @@ Run:
 bash scripts/ci/frontend_live_e2e.sh
 ```
 
+Interactive (recommended for OTP freshness):
+
+```bash
+bash scripts/ci/frontend_live_e2e_interactive.sh
+```
+
 Or run full gate with live stage:
 
 ```bash
