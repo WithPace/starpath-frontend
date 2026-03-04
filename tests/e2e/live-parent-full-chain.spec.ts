@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { resolveChatSendWaitState } from "@/lib/runtime/chat-send-state";
 import { assertLiveE2EConfig, getLiveE2EConfig } from "@/lib/runtime/live-e2e-config";
 import { resolveOtpLoginWaitState } from "@/lib/runtime/otp-login-state";
 
@@ -52,8 +53,22 @@ test.describe("@live parent full chain", () => {
     await page.getByRole("button", { name: "发送" }).click();
 
     await expect(page.getByText(config.chatMessage)).toBeVisible();
-    await expect(page.getByRole("button", { name: "发送" })).toBeEnabled({ timeout: 20_000 });
-    await expect(page.getByText("请求失败：")).toHaveCount(0);
+    await expect
+      .poll(
+        async () => {
+          const sendButtonDisabled = await page.getByRole("button", { name: "发送" }).isDisabled();
+          const requestFailureLocator = page.getByText("请求失败：");
+          const requestFailureText =
+            (await requestFailureLocator.count()) > 0 ? await requestFailureLocator.first().textContent() : null;
+
+          return resolveChatSendWaitState({
+            sendButtonDisabled,
+            requestFailureText,
+          });
+        },
+        { timeout: 90_000, message: "waiting for chat send completion" },
+      )
+      .toBe("ok");
 
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/dashboard$/);
