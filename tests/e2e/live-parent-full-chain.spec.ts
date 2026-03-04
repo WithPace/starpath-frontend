@@ -7,6 +7,7 @@ import { resolveOtpLoginWaitState } from "@/lib/runtime/otp-login-state";
 const liveConfig = getLiveE2EConfig();
 
 test.describe("@live parent full chain", () => {
+  test.describe.configure({ timeout: 180_000 });
   test.skip(!liveConfig.enabled, "RUN_E2E_LIVE != 1, skip live suite");
 
   test("parent can sign in and complete chat/dashboard flow against live backend", async ({ page }) => {
