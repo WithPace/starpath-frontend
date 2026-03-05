@@ -25,7 +25,11 @@ type RoleDashboardPageProps = {
 export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageProps) {
   const router = useRouter();
   const runtime = useRoleRuntime(role);
-  const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
+  const routeDecision = useProtectedRoute(
+    runtime.accessToken,
+    runtime.loading,
+    Boolean(runtime.selectedChildId),
+  );
   const roleUi = getRoleUiMeta(role);
 
   const cards = useDashboardStore((state) => state.getCards(role));

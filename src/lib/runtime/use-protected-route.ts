@@ -5,7 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { getRouteGuardDecision } from "./route-guard";
 
-export function useProtectedRoute(accessToken: string | null, loading: boolean) {
+export function useProtectedRoute(
+  accessToken: string | null,
+  loading: boolean,
+  hasActiveChild?: boolean,
+) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -14,9 +18,10 @@ export function useProtectedRoute(accessToken: string | null, loading: boolean) 
       getRouteGuardDecision({
         loading,
         accessToken,
+        hasActiveChild,
         currentPath: pathname ?? "/",
       }),
-    [loading, accessToken, pathname],
+    [loading, accessToken, hasActiveChild, pathname],
   );
 
   useEffect(() => {
