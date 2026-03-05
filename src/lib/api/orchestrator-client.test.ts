@@ -22,6 +22,7 @@ describe("callOrchestrator", () => {
       {
         apiBaseUrl: "https://api.example.com/functions/v1/orchestrator",
         accessToken: "token-1",
+        anonKey: "anon-key-1",
       },
       {
         child_id: "child-1",
@@ -46,6 +47,9 @@ describe("callOrchestrator", () => {
     expect(typeof requestInit?.body).toBe("string");
     expect(JSON.parse(String(requestInit?.body))).toMatchObject({
       role: "doctor",
+    });
+    expect(requestInit?.headers).toMatchObject({
+      apikey: "anon-key-1",
     });
     expect(result[0]).toMatchObject({
       event: "delta",
@@ -82,5 +86,37 @@ describe("callOrchestrator", () => {
         fetchMock,
       ),
     ).rejects.toThrow("orchestrator request failed: 500");
+  });
+
+  it("aborts and throws timeout error when request exceeds timeout", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (!init?.signal) {
+        throw new Error("missing abort signal");
+      }
+
+      return new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    });
+
+    await expect(
+      callOrchestrator(
+        {
+          apiBaseUrl: "https://api.example.com/functions/v1/orchestrator",
+          accessToken: "token-1",
+          timeoutMs: 10,
+        },
+        {
+          child_id: "child-1",
+          message: "hello",
+          module: "training",
+          role: "parent",
+          request_id: "req-timeout",
+        },
+        fetchMock,
+      ),
+    ).rejects.toThrow("orchestrator request timed out after 10ms");
   });
 });

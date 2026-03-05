@@ -22,6 +22,8 @@ export type OrchestratorPayload = {
 export type OrchestratorClientConfig = {
   apiBaseUrl: string;
   accessToken: string;
+  anonKey?: string;
+  timeoutMs?: number;
 };
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -31,14 +33,36 @@ export async function callOrchestrator(
   payload: OrchestratorPayload,
   fetchImpl: FetchLike = fetch,
 ): Promise<ParsedSseEvent[]> {
-  const response = await fetchImpl(config.apiBaseUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.accessToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const timeoutMs = config.timeoutMs ?? 60_000;
+  const anonKey = config.anonKey?.trim() || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${config.accessToken}`,
+  };
+
+  if (anonKey) {
+    headers.apikey = anonKey;
+  }
+
+  let response: Response;
+  try {
+    response = await fetchImpl(config.apiBaseUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    const isAbortError = error instanceof DOMException && error.name === "AbortError";
+    if (isAbortError) {
+      throw new Error(`orchestrator request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!response.ok) {
     throw new Error(`orchestrator request failed: ${response.status}`);
