@@ -52,6 +52,9 @@ describe("SettingsPage", () => {
     expect(screen.getByRole("link", { name: "隐私政策" })).toHaveAttribute("href", "/legal/privacy");
 
     fireEvent.click(screen.getByRole("button", { name: "其他" }));
+    expect(screen.getByRole("link", { name: "关于星途" })).toHaveAttribute("href", "/about");
     expect(screen.getByRole("link", { name: "意见反馈" })).toHaveAttribute("href", "/feedback");
+    expect(screen.getByRole("link", { name: "升级 VIP" })).toHaveAttribute("href", "/vip");
+    expect(screen.getByRole("link", { name: "注销账号" })).toHaveAttribute("href", "/account-close");
   });
 });

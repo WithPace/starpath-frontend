@@ -237,14 +237,26 @@ export default function SettingsPage() {
         <section className="proto-panel">
           <h2>其他</h2>
           <ul className="proto-bullets">
-            <li>关于星途</li>
+            <li>
+              <Link href="/about" className="button-link">
+                关于星途
+              </Link>
+            </li>
             <li>
               <Link href="/feedback" className="button-link">
                 意见反馈
               </Link>
             </li>
-            <li>升级 VIP</li>
-            <li>注销账号</li>
+            <li>
+              <Link href="/vip" className="button-link">
+                升级 VIP
+              </Link>
+            </li>
+            <li>
+              <Link href="/account-close" className="button-link">
+                注销账号
+              </Link>
+            </li>
           </ul>
           <button type="button" className="button-secondary" onClick={() => void runtime.signOut()}>
             退出登录
