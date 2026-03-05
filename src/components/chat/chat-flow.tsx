@@ -9,17 +9,19 @@ type ChatFlowProps = {
   pending: boolean;
   onSend: (message: string) => void;
   roleLabel?: string;
+  quickPrompts?: string[];
 };
 
-const quickPrompts = [
+const defaultQuickPrompts = [
   "今天训练怎么安排？",
   "帮我总结最近风险变化",
   "给我一个可执行的家庭练习",
 ];
 
-export function ChatFlow({ messages, pending, onSend, roleLabel }: ChatFlowProps) {
+export function ChatFlow({ messages, pending, onSend, roleLabel, quickPrompts }: ChatFlowProps) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
+  const promptList = quickPrompts && quickPrompts.length > 0 ? quickPrompts : defaultQuickPrompts;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,7 +52,7 @@ export function ChatFlow({ messages, pending, onSend, roleLabel }: ChatFlowProps
         ) : null}
       </ul>
       <div className="chat-flow__quick-actions" aria-label="quick-prompts">
-        {quickPrompts.map((prompt) => (
+        {promptList.map((prompt) => (
           <button
             key={prompt}
             type="button"

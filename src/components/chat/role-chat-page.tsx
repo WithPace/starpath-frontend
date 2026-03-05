@@ -13,6 +13,7 @@ import { reportRuntimeError } from "@/lib/runtime/runtime-telemetry";
 import { useProtectedRoute } from "@/lib/runtime/use-protected-route";
 import { useRoleRuntime } from "@/lib/runtime/use-role-runtime";
 import { ChatFlow } from "@/components/chat/chat-flow";
+import { RoleChatBusinessPanel } from "@/components/chat/role-chat-business-panel";
 import { useChatStore } from "@/stores/chat-store";
 
 type RoleChatPageProps = {
@@ -28,6 +29,13 @@ function buildAssistantMessage(content: string) {
     content,
   };
 }
+
+const ROLE_CHAT_PROMPTS: Record<OrchestratorRole, string[]> = {
+  parent: ["今天训练怎么安排？", "帮我总结最近风险变化", "给我一个可执行的家庭练习"],
+  doctor: ["请先完成风险分诊摘要", "给出本周复诊与干预建议", "整理家长沟通的重点话术"],
+  teacher: ["先列出今日课堂干预目标", "给出课后家庭协同作业", "生成本周课堂反馈总结"],
+  org_admin: ["请给出本周机构运营提醒", "梳理成员治理风险项", "形成跨角色协同待办清单"],
+};
 
 export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
   const router = useRouter();
@@ -161,7 +169,14 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
           onRefresh={runtime.refresh}
           onSignOut={runtime.signOut}
         />
-        <ChatFlow messages={messages} pending={pending} onSend={handleSend} roleLabel={roleLabel} />
+        <RoleChatBusinessPanel role={role} pending={pending} />
+        <ChatFlow
+          messages={messages}
+          pending={pending}
+          onSend={handleSend}
+          roleLabel={roleLabel}
+          quickPrompts={ROLE_CHAT_PROMPTS[role]}
+        />
       </section>
     </main>
   );

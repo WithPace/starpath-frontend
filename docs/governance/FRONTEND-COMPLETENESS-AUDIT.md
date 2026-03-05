@@ -38,8 +38,8 @@
 | role | routes | status | evidence |
 |---|---|---|---|
 | parent core | `/chat`, `/dashboard`, `/journey` | implemented | `src/components/chat/role-chat-page.tsx`, `src/components/cards/role-dashboard-page.tsx`, `src/components/workflow/parent-module-chain-page.tsx` |
-| doctor | `/doctor/chat`, `/doctor/dashboard` | implemented + business panel | `src/app/doctor/chat/page.tsx`, `src/app/doctor/dashboard/page.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
-| teacher | `/teacher/chat`, `/teacher/dashboard` | implemented + business panel | `src/app/teacher/chat/page.tsx`, `src/app/teacher/dashboard/page.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
+| doctor | `/doctor/chat`, `/doctor/dashboard` | implemented + business panel | `src/app/doctor/chat/page.tsx`, `src/app/doctor/dashboard/page.tsx`, `src/components/chat/role-chat-business-panel.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-chat-business-panels.spec.ts`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
+| teacher | `/teacher/chat`, `/teacher/dashboard` | implemented + business panel | `src/app/teacher/chat/page.tsx`, `src/app/teacher/dashboard/page.tsx`, `src/components/chat/role-chat-business-panel.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-chat-business-panels.spec.ts`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
 | org admin | `/org-admin/dashboard`, `/org-admin/members` | implemented + business panel | `src/app/org-admin/dashboard/page.tsx`, `src/app/org-admin/members/page.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
 
 ## 4. Automated Evidence Coverage
@@ -51,6 +51,7 @@
   - baseline non-live chain: `pnpm playwright test --grep-invert @live`
   - business continuity chain: `tests/e2e/parent-assessment-advice-home-guide.spec.ts`
   - role dashboard business chain: `tests/e2e/role-dashboard-business-panels.spec.ts`
+  - role chat business chain: `tests/e2e/role-chat-business-panels.spec.ts`
   - live chain (optional): `tests/e2e/live-parent-full-chain.spec.ts`
 - visual audit gate:
   - script: `scripts/ci/frontend_ui_audit_screenshots.sh`
