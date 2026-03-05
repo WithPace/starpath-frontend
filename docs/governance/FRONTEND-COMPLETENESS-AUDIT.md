@@ -33,6 +33,7 @@
 | exception recovery | `/auth/session-expired` | implemented | `src/app/auth/session-expired/page.tsx`, `tests/e2e/parent-session-expired-recovery.spec.ts` |
 | sync and consent | `/sync-center`, `/notifications`, `/data-consent` | implemented | `src/app/sync-center/page.tsx`, `src/app/notifications/page.tsx`, `src/app/data-consent/page.tsx` |
 | settings legal and feedback | `/legal/terms`, `/legal/privacy`, `/feedback` | implemented | `src/app/legal/terms/page.tsx`, `src/app/legal/privacy/page.tsx`, `src/app/feedback/page.tsx`, `src/app/settings/page.tsx` |
+| settings other actions | `/about`, `/vip`, `/account-close` | implemented | `src/app/about/page.tsx`, `src/app/vip/page.tsx`, `src/app/account-close/page.tsx`, `src/app/settings/page.tsx` |
 
 ## 3. Multi-role Route Coverage
 
