@@ -372,6 +372,38 @@ textarea {
   font-size: 0.75rem;
 }
 
+.role-business-panel {
+  border: 1px solid var(--border);
+  border-radius: 0.95rem;
+  background: var(--surface-strong);
+  padding: 0.82rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.role-business-panel__header h2 {
+  font-size: 1.02rem;
+}
+
+.role-business-panel__hint {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.role-business-panel__list {
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.role-business-panel__list li {
+  border: 1px dashed var(--border);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 0.4rem 0.52rem;
+  font-size: 0.88rem;
+}
+
 .landing-page {
   min-height: 100vh;
   padding: clamp(1rem, 2vw, 2rem);
