@@ -34,4 +34,19 @@ describe("ChatFlow", () => {
 
     expect(onSend).toHaveBeenCalledWith("今天训练怎么安排");
   });
+
+  it("renders custom quick prompts when provided", () => {
+    render(
+      <ChatFlow
+        messages={[]}
+        onSend={vi.fn()}
+        pending={false}
+        quickPrompts={["医生：输出复诊建议", "医生：总结风险变化"]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "医生：输出复诊建议" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "医生：总结风险变化" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "今天训练怎么安排？" })).not.toBeInTheDocument();
+  });
 });
