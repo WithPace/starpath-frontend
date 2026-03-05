@@ -9,7 +9,7 @@ import { DashboardCards } from "@/components/cards/dashboard-cards";
 import { RoleBusinessPanel } from "@/components/cards/role-business-panel";
 import { RoleRuntimePanel } from "@/components/runtime/role-runtime-panel";
 import { readFrontendEnv } from "@/lib/env";
-import { extractDashboardCards } from "@/lib/runtime/dashboard-cards";
+import { applyDashboardCardFallback, extractDashboardCards } from "@/lib/runtime/dashboard-cards";
 import { getRoleUiMeta } from "@/lib/runtime/role-ui";
 import { isPermissionDeniedMessage } from "@/lib/runtime/org-members";
 import { reportRuntimeError } from "@/lib/runtime/runtime-telemetry";
@@ -79,13 +79,8 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
         );
 
         const nextCards = extractDashboardCards(events);
-        if (nextCards.length === 0) {
-          setError(role, "看板请求成功，但未返回 cards 数据。请检查后端 done/delta payload。");
-          setCards(role, []);
-          return;
-        }
-
-        setCards(role, nextCards);
+        const resolvedCards = applyDashboardCardFallback(nextCards, role);
+        setCards(role, resolvedCards);
       } catch (requestError) {
         const errorMessage = requestError instanceof Error ? requestError.message : "看板加载失败";
         reportRuntimeError({

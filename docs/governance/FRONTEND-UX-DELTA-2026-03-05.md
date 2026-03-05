@@ -31,6 +31,10 @@
 - 新增契约测试: `tests/governance/test_frontend_ui_audit_artifacts.sh`
 - `scripts/ci/frontend_final_gate.sh` 已接入治理与异常链路门禁。
 
+5. Live dashboard resilience
+- 当后端返回空 `cards` payload 时，前端改为角色化 fallback cards，而不是显示阻断性 `看板加载失败`。
+- 关联实现: `src/lib/runtime/dashboard-cards.ts`, `src/components/cards/role-dashboard-page.tsx`。
+
 ## Known Gaps
 
 - 非 live 环境下，部分 AI 数据页仍以降级文案为主，需依赖真实 Supabase 数据做最终体验验收。
