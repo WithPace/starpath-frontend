@@ -11,6 +11,8 @@
 | route | ai touchpoint | runtime input | failure fallback | evidence |
 |---|---|---|---|---|
 | `/chat` | orchestrator 对话生成 | `access_token`, `child_id`, user message | assistant 返回 `请求失败：...` | `src/components/chat/role-chat-page.tsx`, `tests/e2e/parent-child-switch.spec.ts` |
+| `/doctor/chat` | 医生角色化对话（风险分诊 + 复诊建议） | `access_token`, `child_id`, `role=doctor`, user message | assistant 返回 `请求失败：...` + 业务执行面板常驻 | `src/components/chat/role-chat-page.tsx`, `src/components/chat/role-chat-business-panel.tsx`, `tests/e2e/role-chat-business-panels.spec.ts` |
+| `/teacher/chat` | 教师角色化对话（课堂干预 + 家校协同） | `access_token`, `child_id`, `role=teacher`, user message | assistant 返回 `请求失败：...` + 业务执行面板常驻 | `src/components/chat/role-chat-page.tsx`, `src/components/chat/role-chat-business-panel.tsx`, `tests/e2e/role-chat-business-panels.spec.ts` |
 | `/dashboard` | AI 卡片洞察摘要 | `access_token`, `child_id` | `看板加载失败：...` | `src/components/cards/role-dashboard-page.tsx` |
 | `/doctor/dashboard` | AI 看板卡片 + 医生业务待办面板 | `access_token`, `child_id`, `role=doctor` | `看板异常：...` + 标准待办降级 | `src/components/cards/role-dashboard-page.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
 | `/teacher/dashboard` | AI 看板卡片 + 教师业务执行清单 | `access_token`, `child_id`, `role=teacher` | `看板异常：...` + 标准待办降级 | `src/components/cards/role-dashboard-page.tsx`, `src/components/cards/role-business-panel.tsx`, `tests/e2e/role-dashboard-business-panels.spec.ts` |
