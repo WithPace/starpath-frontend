@@ -4,6 +4,9 @@ set -euo pipefail
 RUN_E2E="${RUN_E2E:-1}"
 RUN_E2E_LIVE="${RUN_E2E_LIVE:-0}"
 
+# Remove stale Next artifacts to keep type validation deterministic across branches/worktrees.
+rm -rf .next
+
 pnpm lint
 pnpm typecheck
 pnpm test
