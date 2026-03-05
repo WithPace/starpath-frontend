@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Worktree outputs must be ignored to avoid lint scanning generated artifacts.
+    ".worktrees/**",
+    "worktrees/**",
   ]),
 ]);
 
