@@ -711,6 +711,13 @@ textarea {
   flex-wrap: wrap;
 }
 
+.proto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
 .proto-section-header {
   display: flex;
   justify-content: space-between;
