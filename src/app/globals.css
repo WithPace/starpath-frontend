@@ -682,6 +682,12 @@ textarea {
   gap: 0.56rem;
 }
 
+.proto-inset-panel {
+  margin-top: 0.3rem;
+  border-style: dashed;
+  background: rgba(124, 77, 255, 0.04);
+}
+
 .proto-center {
   text-align: center;
   justify-items: center;
@@ -703,6 +709,13 @@ textarea {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.proto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .proto-section-header {

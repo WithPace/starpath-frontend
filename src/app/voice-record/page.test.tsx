@@ -38,4 +38,10 @@ describe("VoiceRecordPage", () => {
     await waitFor(() => expect(saveVoiceRecordMock).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/记录已保存/)).toBeInTheDocument();
   });
+
+  it("renders ai structured record action", () => {
+    render(<VoiceRecordPage />);
+
+    expect(screen.getByRole("button", { name: "AI 结构化记录" })).toBeInTheDocument();
+  });
 });

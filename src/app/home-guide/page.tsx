@@ -21,6 +21,7 @@ export default function HomeGuidePage() {
   const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
 
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [steps, setSteps] = useState<string[]>([
     "共同注意：吹泡泡 + 指向跟随（10 分钟）",
@@ -32,6 +33,8 @@ export default function HomeGuidePage() {
     "完成后立即强化（拥抱/贴纸/口头鼓励）。",
     "情绪波动时先做安抚，再回到任务。",
   ]);
+  const [planDigest, setPlanDigest] = useState("建议在晚饭前完成前两项训练，睡前做复盘。");
+  const [planVersion, setPlanVersion] = useState(1);
 
   const blockingReason = !client
     ? "缺少 Supabase 前端配置，展示默认指导。"
@@ -77,9 +80,13 @@ export default function HomeGuidePage() {
             ? `画像摘要：${profile.overall_summary}`
             : "每次训练后写 1 条复盘，便于 AI 持续优化建议。",
         ];
+        const digest = `近 7 天训练 ${trend.last7DaysSessions} 次，建议今日总训练 ${
+          trend.last7DaysSessions < 4 ? "25" : "35"
+        } 分钟，重点先做薄弱项。`;
 
         setSteps(nextSteps);
         setTips(nextTips);
+        setPlanDigest(digest);
       } catch (error) {
         setErrorText(error instanceof Error ? error.message : "居家指导读取失败。");
       } finally {
@@ -90,11 +97,42 @@ export default function HomeGuidePage() {
     void run();
   }, [blockingReason, client, runtime.selectedChildId]);
 
+  const regeneratePlan = () => {
+    setGenerating(true);
+    setErrorText(null);
+
+    setSteps((previous) => {
+      if (previous.length < 3) return previous;
+      const [first, second, third, ...rest] = previous;
+      return [second, first, third, ...rest];
+    });
+    setTips((previous) => {
+      if (previous.length === 0) return previous;
+      return [...previous.slice(1), previous[0]];
+    });
+    setPlanVersion((previous) => previous + 1);
+    setPlanDigest((previous) =>
+      previous.includes("优先")
+        ? "建议按低负荷到高负荷顺序执行，晚间只保留巩固环节。"
+        : "建议优先完成目标 1/2，目标 3 根据孩子状态弹性调整。",
+    );
+
+    setGenerating(false);
+  };
+
   return (
     <ParentShell title="居家指导" subtitle="按场景拆分的可执行训练建议" activePath="/quick-menu">
       <section className="proto-panel">
         <p className="proto-kicker">08 · 居家指导</p>
-        <h2>今日执行重点（动态）</h2>
+        <div className="proto-section-header">
+          <h2>今日执行重点（动态）</h2>
+          <button type="button" className="button-primary" onClick={regeneratePlan} disabled={generating}>
+            {generating ? "生成中..." : "AI 生成今日计划"}
+          </button>
+        </div>
+        <p className="proto-muted">
+          版本 V{planVersion} · {planDigest}
+        </p>
         {loading ? <p className="proto-muted">指导生成中...</p> : null}
         {blockingReason || errorText ? (
           <p className="proto-muted">指导降级：{blockingReason ?? errorText}</p>

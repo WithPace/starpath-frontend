@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AuthPage from "./page";
 
 const replace = vi.fn();
+const ensureParentRegistration = vi.fn();
 let mockClient: {
   auth: {
     getSession: ReturnType<typeof vi.fn>;
@@ -23,9 +24,14 @@ vi.mock("@/lib/supabase/client", () => ({
   tryCreateBrowserSupabaseClient: () => mockClient,
 }));
 
+vi.mock("@/lib/prototype/parent-data-access", () => ({
+  ensureParentRegistration: (...args: unknown[]) => ensureParentRegistration(...args),
+}));
+
 describe("AuthPage", () => {
   beforeEach(() => {
     replace.mockReset();
+    ensureParentRegistration.mockReset();
     mockClient = null;
   });
 
@@ -60,5 +66,56 @@ describe("AuthPage", () => {
     await waitFor(() => expect(signInWithOtp).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("验证码已发送，请查收短信。")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /重新发送\(\d+s\)/ })).toBeDisabled();
+  });
+
+  it("redirects first-login user to /create-child after otp verify", async () => {
+    ensureParentRegistration.mockResolvedValue({ isFirstLogin: true, userId: "user-1" });
+    mockClient = {
+      auth: {
+        getSession: vi.fn(async () => ({ data: { session: null } })),
+        signInWithOtp: vi.fn(async () => ({ error: null })),
+        verifyOtp: vi.fn(async () => ({ error: null })),
+        signOut: vi.fn(async () => undefined),
+      },
+    };
+
+    render(<AuthPage />);
+
+    fireEvent.change(screen.getByLabelText("手机号"), {
+      target: { value: "+8613800138000" },
+    });
+    fireEvent.change(screen.getByLabelText("验证码"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "验证码登录" }));
+
+    await waitFor(() => expect(ensureParentRegistration).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/create-child"));
+  });
+
+  it("redirects returning user to next path after otp verify", async () => {
+    ensureParentRegistration.mockResolvedValue({ isFirstLogin: false, userId: "user-1" });
+    mockClient = {
+      auth: {
+        getSession: vi.fn(async () => ({ data: { session: null } })),
+        signInWithOtp: vi.fn(async () => ({ error: null })),
+        verifyOtp: vi.fn(async () => ({ error: null })),
+        signOut: vi.fn(async () => undefined),
+      },
+    };
+
+    window.history.pushState({}, "", "/auth?next=%2Fchat");
+    render(<AuthPage />);
+
+    fireEvent.change(screen.getByLabelText("手机号"), {
+      target: { value: "+8613800138000" },
+    });
+    fireEvent.change(screen.getByLabelText("验证码"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "验证码登录" }));
+
+    await waitFor(() => expect(ensureParentRegistration).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/chat"));
   });
 });

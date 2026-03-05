@@ -32,7 +32,11 @@ function buildAssistantMessage(content: string) {
 export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
   const router = useRouter();
   const runtime = useRoleRuntime(role);
-  const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
+  const routeDecision = useProtectedRoute(
+    runtime.accessToken,
+    runtime.loading,
+    Boolean(runtime.selectedChildId),
+  );
   const roleUi = getRoleUiMeta(role);
 
   const messages = useChatStore((state) => state.getMessages(role));
@@ -44,6 +48,7 @@ export function RoleChatPage({ title, role, roleLabel }: RoleChatPageProps) {
     if (!routeDecision.allow) return;
     if (!runtime.isAuthenticated) return;
     if (runtime.selectedChildId) return;
+    if (role === "parent") return;
 
     router.replace(`/forbidden?reason=no_child_access&role=${role}`);
   }, [routeDecision.allow, role, router, runtime.isAuthenticated, runtime.selectedChildId]);

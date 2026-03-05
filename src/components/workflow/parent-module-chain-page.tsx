@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { callOrchestrator } from "@/lib/api/orchestrator-client";
@@ -88,7 +88,11 @@ export function ParentModuleChainPage() {
   const router = useRouter();
   const roleUi = getRoleUiMeta("parent");
   const runtime = useRoleRuntime("parent");
-  const routeDecision = useProtectedRoute(runtime.accessToken, runtime.loading);
+  const routeDecision = useProtectedRoute(
+    runtime.accessToken,
+    runtime.loading,
+    Boolean(runtime.selectedChildId),
+  );
   const [modules, setModules] = useState<Record<ParentModuleId, ParentModuleState>>(createInitialModuleState);
   const [runningAll, setRunningAll] = useState(false);
 
@@ -96,14 +100,6 @@ export function ParentModuleChainPage() {
     () => moduleOrder.some((moduleId) => modules[moduleId].pending),
     [modules],
   );
-
-  useEffect(() => {
-    if (!routeDecision.allow) return;
-    if (!runtime.isAuthenticated) return;
-    if (runtime.selectedChildId) return;
-
-    router.replace("/forbidden?reason=no_child_access&role=parent");
-  }, [routeDecision.allow, router, runtime.isAuthenticated, runtime.selectedChildId]);
 
   const runSingleModule = async (moduleId: ParentModuleId) => {
     if (!runtime.accessToken) {

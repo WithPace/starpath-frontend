@@ -24,6 +24,7 @@ export default function CardFullscreenPage() {
   const [tab, setTab] = useState<CardTab>("trend");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [sessions, setSessions] = useState<TrainingSessionRecord[]>([]);
   const [profile, setProfile] = useState<LatestChildProfile | null>(null);
   const [assessments, setAssessments] = useState<AssessmentHistoryRow[]>([]);
@@ -66,21 +67,31 @@ export default function CardFullscreenPage() {
   const trend = summarizeTrainingTrend(sessions);
   const domainScores = extractDomainScores(profile?.domain_levels ?? null);
   const latestAssessment = assessments[0];
+  const saveToGrowthCard = () => {
+    const tabLabel = tab === "trend" ? "训练趋势" : tab === "radar" ? "能力画像" : "评估报告";
+    setSaveMessage(`已保存「${tabLabel}」到成长卡片。`);
+  };
 
   return (
     <ParentShell title="卡片全屏" subtitle="缩略卡片展开后的沉浸视图" activePath="/quick-menu" hideBottomNav>
       <section className="proto-panel">
-        <div className="proto-chip-row">
-          <button type="button" className={tab === "trend" ? "chip-button active" : "chip-button"} onClick={() => setTab("trend")}>
-            训练趋势
-          </button>
-          <button type="button" className={tab === "radar" ? "chip-button active" : "chip-button"} onClick={() => setTab("radar")}>
-            能力画像
-          </button>
-          <button type="button" className={tab === "assessment" ? "chip-button active" : "chip-button"} onClick={() => setTab("assessment")}>
-            评估报告
+        <div className="proto-section-header">
+          <div className="proto-chip-row">
+            <button type="button" className={tab === "trend" ? "chip-button active" : "chip-button"} onClick={() => setTab("trend")}>
+              训练趋势
+            </button>
+            <button type="button" className={tab === "radar" ? "chip-button active" : "chip-button"} onClick={() => setTab("radar")}>
+              能力画像
+            </button>
+            <button type="button" className={tab === "assessment" ? "chip-button active" : "chip-button"} onClick={() => setTab("assessment")}>
+              评估报告
+            </button>
+          </div>
+          <button type="button" className="button-primary" onClick={saveToGrowthCard}>
+            保存到成长卡片
           </button>
         </div>
+        {saveMessage ? <p className="proto-muted">{saveMessage}</p> : null}
       </section>
 
       <section className="proto-panel proto-chart-panel">

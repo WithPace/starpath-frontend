@@ -1,12 +1,15 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ParentShell } from "@/components/prototype/parent-shell";
 import { createChildProfile } from "@/lib/prototype/parent-data-access";
+import { persistManualChildId } from "@/lib/runtime/runtime-credentials";
 import { tryCreateBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export default function CreateChildPage() {
+  const router = useRouter();
   const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
 
   const [nickname, setNickname] = useState("");
@@ -39,6 +42,8 @@ export default function CreateChildPage() {
 
       setSuccessText(`档案已保存：${nickname}（child_id: ${result.childId}）`);
       setWarnings(result.warnings);
+      persistManualChildId(result.childId);
+      router.replace("/assessment");
     } catch (error) {
       setErrorText(error instanceof Error ? error.message : "保存失败，请稍后重试。");
     } finally {

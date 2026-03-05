@@ -31,6 +31,7 @@ pnpm install
 pnpm lint
 pnpm typecheck
 pnpm test
+bash tests/governance/test_frontend_ui_audit_artifacts.sh
 pnpm build
 pnpm test:e2e
 ```
@@ -76,10 +77,10 @@ Go-live can proceed only when:
 1. All commands in section 2 pass.
 2. No blocking errors appear in smoke criteria pages.
 3. Release evidence updated in `docs/governance/FRONTEND-RELEASE-RECORD.md`.
+4. UI 审计工件可复现（`scripts/ci/frontend_ui_audit_screenshots.sh`）。
 
 ## 5. Rollback
 
 If any go-live check fails after deployment, execute rollback using:
 
 - `docs/governance/FRONTEND-ROLLBACK-RUNBOOK.md`
-

@@ -7,10 +7,12 @@ RUN_E2E_LIVE="${RUN_E2E_LIVE:-0}"
 pnpm lint
 pnpm typecheck
 pnpm test
+bash tests/governance/test_frontend_ui_audit_artifacts.sh
 pnpm build
 
 if [ "$RUN_E2E" = "1" ]; then
-  pnpm playwright test --grep-invert @live
+  pnpm playwright test --grep @exception
+  pnpm playwright test --grep-invert "@live|@exception"
 fi
 
 if [ "$RUN_E2E_LIVE" = "1" ]; then
