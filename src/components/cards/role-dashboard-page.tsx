@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { callOrchestrator, type OrchestratorRole } from "@/lib/api/orchestrator-client";
 import { DashboardCards } from "@/components/cards/dashboard-cards";
+import { RoleBusinessPanel } from "@/components/cards/role-business-panel";
 import { RoleRuntimePanel } from "@/components/runtime/role-runtime-panel";
 import { readFrontendEnv } from "@/lib/env";
 import { extractDashboardCards } from "@/lib/runtime/dashboard-cards";
@@ -159,6 +160,7 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
           onSignOut={runtime.signOut}
         />
         <DashboardCards cards={cards} loading={loading} error={error} />
+        <RoleBusinessPanel role={role} cards={cards} loading={loading} error={error} />
       </section>
     </main>
   );
