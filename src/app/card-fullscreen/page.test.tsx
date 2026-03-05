@@ -24,5 +24,6 @@ describe("CardFullscreenPage", () => {
     render(<CardFullscreenPage />);
 
     expect(screen.getByRole("heading", { name: "近30天训练概览" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存到成长卡片" })).toBeInTheDocument();
   });
 });

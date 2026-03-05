@@ -39,6 +39,7 @@ export default function TrainingDetailPage() {
   const [week, setWeek] = useState<(typeof weekOptions)[number]>("本周");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [sessions, setSessions] = useState<TrainingSessionLite[]>([]);
   const blockingReason = !client
     ? "缺少 Supabase 前端配置，展示默认详情。"
@@ -92,11 +93,19 @@ export default function TrainingDetailPage() {
           return `${group.date}：${skillText}（${group.totalMinutes} 分钟，成功率 ${scoreText}）`;
         })
       : ["周一：共同注意 + 吹泡泡游戏（15 分钟）", "周三：情绪识别 + 指令跟随（20 分钟）"];
+  const exportPdf = () => {
+    setExportMessage(`已生成 ${week} 训练详情 PDF（演示模式）。`);
+  };
 
   return (
     <ParentShell title="训练详情" subtitle="周切换 + 日期锚点导航" activePath="/quick-menu">
       <section className="proto-panel">
-        <h2>详细训练记录</h2>
+        <div className="proto-section-header">
+          <h2>详细训练记录</h2>
+          <button type="button" className="button-secondary" onClick={exportPdf}>
+            导出 PDF
+          </button>
+        </div>
         <p className="proto-muted">周切换</p>
         <div className="proto-chip-row" aria-label="week-switch">
           {weekOptions.map((item) => (
@@ -114,6 +123,7 @@ export default function TrainingDetailPage() {
         {blockingReason || errorText ? (
           <p className="proto-muted">详情降级：{blockingReason ?? errorText}</p>
         ) : null}
+        {exportMessage ? <p className="proto-muted">{exportMessage}</p> : null}
       </section>
 
       <section className="proto-panel">

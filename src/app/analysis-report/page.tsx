@@ -24,6 +24,7 @@ export default function AnalysisReportPage() {
   const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
 
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [scores, setScores] = useState<DomainScore[]>(extractDomainScores(null));
   const [overallText, setOverallText] = useState(
@@ -31,6 +32,9 @@ export default function AnalysisReportPage() {
   );
   const [abcText, setAbcText] = useState(
     "前因：任务切换/疲劳；行为：哭闹+逃避；结果：安抚后恢复，建议预告切换并提供视觉支持。",
+  );
+  const [suggestionText, setSuggestionText] = useState(
+    "点击 AI 生成干预建议，系统会基于领域评分和行为记录生成家庭执行方案。",
   );
   const blockingReason = !client
     ? "缺少 Supabase 前端配置，展示默认分析。"
@@ -100,11 +104,34 @@ export default function AnalysisReportPage() {
     void run();
   }, [blockingReason, client, runtime.selectedChildId]);
 
+  const generateIntervention = () => {
+    setGenerating(true);
+    const weakDomains = scores
+      .filter((item): item is DomainScore & { score: number } => item.score !== null)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 2)
+      .map((item) => item.label);
+    const weakText = weakDomains.length > 0 ? weakDomains.join("、") : "训练基础能力";
+    setSuggestionText(`建议优先强化 ${weakText}，每天 2 轮短训练（每轮 8-10 分钟），并保留 1 条 ABC 复盘。`);
+    setGenerating(false);
+  };
+
   return (
     <ParentShell title="分析报告" subtitle="近 3 个月综合发展变化" activePath="/quick-menu">
       <section className="proto-panel">
-        <h2>综合发展分析报告</h2>
+        <div className="proto-section-header">
+          <h2>综合发展分析报告</h2>
+          <button
+            type="button"
+            className="button-primary"
+            onClick={generateIntervention}
+            disabled={generating}
+          >
+            {generating ? "生成中..." : "AI 生成干预建议"}
+          </button>
+        </div>
         <p className="proto-muted">{overallText}</p>
+        <p className="proto-muted">{suggestionText}</p>
         {loading ? <p className="proto-muted">分析加载中...</p> : null}
         {blockingReason || errorText ? (
           <p className="proto-muted">分析降级：{blockingReason ?? errorText}</p>
