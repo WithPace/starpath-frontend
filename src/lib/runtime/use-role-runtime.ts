@@ -92,19 +92,25 @@ export function useRoleRuntime(role: OrchestratorRole): RoleRuntimeState {
     setLoading(true);
     setWarning(null);
 
+    const manual = readManualRuntimeCredentialsFromWindow();
+
     if (!client) {
+      const manualAccessToken = pickRuntimeAccessToken({
+        manualAccessToken: manual.manualAccessToken,
+      });
+      const manualChildId = normalizeManualChildId(manual.manualChildId);
+
       setWarning("缺少 NEXT_PUBLIC_SUPABASE_URL 或 NEXT_PUBLIC_SUPABASE_ANON_KEY，运行时能力已降级。");
       setIsAuthenticated(false);
       setSessionEmail(null);
-      setAccessToken(null);
+      setAccessToken(manualAccessToken);
       setChildren([]);
-      setSelectedChildIdState(null);
+      setSelectedChildIdState(manualChildId);
       setLoading(false);
       return;
     }
 
     try {
-      const manual = readManualRuntimeCredentialsFromWindow();
       const { data, error } = await client.auth.getSession();
       if (error) {
         throw new Error(`读取登录会话失败：${error.message}`);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ParentShell } from "@/components/prototype/parent-shell";
@@ -11,6 +11,14 @@ function normalizeNextPath(value: string | null): string {
 }
 
 export default function SessionExpiredPage() {
+  return (
+    <Suspense fallback={null}>
+      <SessionExpiredInner />
+    </Suspense>
+  );
+}
+
+function SessionExpiredInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

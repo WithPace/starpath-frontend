@@ -10,7 +10,8 @@ pnpm test
 pnpm build
 
 if [ "$RUN_E2E" = "1" ]; then
-  pnpm playwright test --grep-invert @live
+  pnpm playwright test --grep @exception
+  pnpm playwright test --grep-invert "@live|@exception"
 fi
 
 if [ "$RUN_E2E_LIVE" = "1" ]; then
