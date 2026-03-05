@@ -24,5 +24,6 @@ describe("HomeGuidePage", () => {
     render(<HomeGuidePage />);
 
     expect(screen.getByRole("heading", { name: "今日执行重点（动态）" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "AI 生成今日计划" })).toBeInTheDocument();
   });
 });

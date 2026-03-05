@@ -682,6 +682,12 @@ textarea {
   gap: 0.56rem;
 }
 
+.proto-inset-panel {
+  margin-top: 0.3rem;
+  border-style: dashed;
+  background: rgba(124, 77, 255, 0.04);
+}
+
 .proto-center {
   text-align: center;
   justify-items: center;
