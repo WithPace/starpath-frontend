@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/prototype/parent-shell";
@@ -131,6 +132,11 @@ export default function AssessmentPage() {
               </p>
             ) : null}
             {saveError ? <p className="proto-muted">保存失败：{saveError}</p> : null}
+            <div className="proto-actions">
+              <Link href="/training-advice" className="button-primary">
+                进入训练建议
+              </Link>
+            </div>
           </>
         )}
         {blockingReason ? <p className="proto-muted">运行时降级：{blockingReason}</p> : null}

@@ -40,5 +40,6 @@ describe("AssessmentPage", () => {
 
     await waitFor(() => expect(saveAssessmentMock).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/评估已保存/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "进入训练建议" })).toBeInTheDocument();
   });
 });
