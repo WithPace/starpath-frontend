@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/prototype/parent-shell";
@@ -218,8 +219,16 @@ export default function SettingsPage() {
         <section className="proto-panel">
           <h2>法律信息</h2>
           <ul className="proto-bullets">
-            <li>用户协议</li>
-            <li>隐私政策</li>
+            <li>
+              <Link href="/legal/terms" className="button-link">
+                用户协议
+              </Link>
+            </li>
+            <li>
+              <Link href="/legal/privacy" className="button-link">
+                隐私政策
+              </Link>
+            </li>
           </ul>
         </section>
       ) : null}
@@ -229,7 +238,11 @@ export default function SettingsPage() {
           <h2>其他</h2>
           <ul className="proto-bullets">
             <li>关于星途</li>
-            <li>意见反馈</li>
+            <li>
+              <Link href="/feedback" className="button-link">
+                意见反馈
+              </Link>
+            </li>
             <li>升级 VIP</li>
             <li>注销账号</li>
           </ul>

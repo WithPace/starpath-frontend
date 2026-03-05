@@ -43,4 +43,15 @@ describe("SettingsPage", () => {
     await waitFor(() => expect(saveParentNicknameMock).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/昵称已更新/)).toBeInTheDocument();
   });
+
+  it("shows legal and feedback route links", async () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "法律信息" }));
+    expect(screen.getByRole("link", { name: "用户协议" })).toHaveAttribute("href", "/legal/terms");
+    expect(screen.getByRole("link", { name: "隐私政策" })).toHaveAttribute("href", "/legal/privacy");
+
+    fireEvent.click(screen.getByRole("button", { name: "其他" }));
+    expect(screen.getByRole("link", { name: "意见反馈" })).toHaveAttribute("href", "/feedback");
+  });
 });
