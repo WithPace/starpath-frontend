@@ -28,6 +28,7 @@
 
 | domain | routes | status | evidence |
 |---|---|---|---|
+| training advice chain | `/training-advice` | implemented | `src/app/training-advice/page.tsx`, `tests/e2e/parent-assessment-advice-home-guide.spec.ts` |
 | child management | `/children`, `/children/[id]/edit` | implemented | `src/app/children/page.tsx`, `src/app/children/[id]/edit/page.tsx` |
 | exception recovery | `/auth/session-expired` | implemented | `src/app/auth/session-expired/page.tsx`, `tests/e2e/parent-session-expired-recovery.spec.ts` |
 | sync and consent | `/sync-center`, `/notifications`, `/data-consent` | implemented | `src/app/sync-center/page.tsx`, `src/app/notifications/page.tsx`, `src/app/data-consent/page.tsx` |
@@ -48,6 +49,7 @@
 - e2e gate:
   - exception chain: `tests/e2e/*@exception*`
   - baseline non-live chain: `pnpm playwright test --grep-invert @live`
+  - business continuity chain: `tests/e2e/parent-assessment-advice-home-guide.spec.ts`
   - live chain (optional): `tests/e2e/live-parent-full-chain.spec.ts`
 - visual audit gate:
   - script: `scripts/ci/frontend_ui_audit_screenshots.sh`
