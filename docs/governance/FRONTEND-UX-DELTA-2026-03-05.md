@@ -40,6 +40,9 @@
 - `next.config.ts` 增加 `allowedDevOrigins`，消除本地 `127.0.0.1` 到 `/_next/*` 的跨域警告噪声。
 - `next.config.ts` 增加 `turbopack.root`，固定 workspace root，降低多 lockfile 推断警告噪声。
 
+7. CI log noise hardening
+- 在 `scripts/ci/frontend_final_gate.sh` 与 `scripts/ci/frontend_live_e2e.sh` 增加 `NO_COLOR` 清理守卫，并在 `playwright.config.ts` 增加运行前环境清理，压降 Node 环境警告噪声。
+
 ## Known Gaps
 
 - 非 live 环境下，部分 AI 数据页仍以降级文案为主，需依赖真实 Supabase 数据做最终体验验收。

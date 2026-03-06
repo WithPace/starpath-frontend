@@ -4,6 +4,11 @@ set -euo pipefail
 RUN_E2E="${RUN_E2E:-1}"
 RUN_E2E_LIVE="${RUN_E2E_LIVE:-0}"
 
+# Avoid Node warning noise when Playwright later injects FORCE_COLOR.
+if [ "${NO_COLOR+x}" = "x" ]; then
+  unset NO_COLOR
+fi
+
 # Remove stale Next artifacts to keep type validation deterministic across branches/worktrees.
 rm -rf .next
 
