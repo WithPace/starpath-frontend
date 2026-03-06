@@ -127,6 +127,72 @@ request_otp_with_retry() {
   return 1
 }
 
+prompt_live_otp() {
+  local next_otp
+  read -r -p "input latest 6-digit otp: " next_otp
+  if [[ ! "$next_otp" =~ ^[0-9]{6}$ ]]; then
+    echo "invalid otp format, expect 6 digits"
+    return 1
+  fi
+
+  printf "%s" "$next_otp"
+}
+
+last_verify_error_code=""
+last_verify_error_message=""
+
+verify_otp_for_access_token() {
+  local phone="$1"
+  local otp="$2"
+  local verify_resp
+  verify_resp="$(mktemp)"
+
+  local verify_code
+  verify_code="$(curl -sS -o "$verify_resp" -w "%{http_code}" \
+    "${NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify" \
+    -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"phone\":\"${phone}\",\"token\":\"${otp}\",\"type\":\"sms\"}")"
+
+  if [ "$verify_code" != "200" ]; then
+    last_verify_error_code="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.error_code || "").trim()); } catch { process.stdout.write(""); }' "$verify_resp" 2>/dev/null || true)"
+    last_verify_error_message="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.msg || p.message || p.error_description || "").trim()); } catch { process.stdout.write(""); }' "$verify_resp" 2>/dev/null || true)"
+    if [ -z "$last_verify_error_message" ]; then
+      last_verify_error_message="$(cat "$verify_resp")"
+    fi
+    rm -f "$verify_resp"
+    return 1
+  fi
+
+  local token
+  token="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.access_token || "").trim());' "$verify_resp")"
+  rm -f "$verify_resp"
+
+  if [ -z "$token" ]; then
+    last_verify_error_code="missing_access_token"
+    last_verify_error_message="otp verify response missing access_token"
+    return 1
+  fi
+
+  last_verify_error_code=""
+  last_verify_error_message=""
+  printf "%s" "$token"
+}
+
+is_retryable_verify_failure() {
+  case "${last_verify_error_code}" in
+    invalid_grant|otp_expired|invalid_otp|bad_code|expired_code)
+      return 0
+      ;;
+  esac
+
+  if echo "${last_verify_error_message}" | grep -Eqi "token has expired or is invalid|expired|invalid"; then
+    return 0
+  fi
+
+  return 1
+}
+
 if [ -n "${E2E_LIVE_OTP:-}" ]; then
   live_otp="$E2E_LIVE_OTP"
   echo "using otp from E2E_LIVE_OTP env"
@@ -136,35 +202,45 @@ else
     exit 1
   fi
 
-  read -r -p "input latest 6-digit otp: " live_otp
-  if [[ ! "$live_otp" =~ ^[0-9]{6}$ ]]; then
-    echo "invalid otp format, expect 6 digits"
+  if ! live_otp="$(prompt_live_otp)"; then
     exit 1
   fi
 fi
 
 if [ "${E2E_LIVE_USE_TOKEN_MODE:-0}" = "1" ]; then
-  echo "verifying otp via supabase auth api ..."
-  verify_resp="$(mktemp)"
-  verify_code="$(curl -sS -o "$verify_resp" -w "%{http_code}" \
-    "${NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify" \
-    -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-    -H "Content-Type: application/json" \
-    -d "{\"phone\":\"${E2E_LIVE_PHONE}\",\"token\":\"${live_otp}\",\"type\":\"sms\"}")"
+  max_verify_attempts=3
+  verify_attempt=1
+  while true; do
+    echo "verifying otp via supabase auth api ... (attempt ${verify_attempt}/${max_verify_attempts})"
+    if live_access_token="$(verify_otp_for_access_token "${E2E_LIVE_PHONE}" "${live_otp}")"; then
+      break
+    fi
 
-  if [ "$verify_code" != "200" ]; then
-    echo "otp verify failed: http=$verify_code body=$(cat "$verify_resp")"
-    rm -f "$verify_resp"
-    exit 1
-  fi
+    echo "otp verify failed: code=${last_verify_error_code:-unknown} message=${last_verify_error_message:-unknown}"
+    if [ -n "${E2E_LIVE_OTP:-}" ]; then
+      echo "E2E_LIVE_OTP mode is one-shot. update OTP and rerun."
+      exit 1
+    fi
 
-  live_access_token="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.access_token || "").trim());' "$verify_resp")"
-  rm -f "$verify_resp"
+    if [ "$verify_attempt" -ge "$max_verify_attempts" ]; then
+      echo "otp verify failed after ${max_verify_attempts} attempts"
+      exit 1
+    fi
 
-  if [ -z "$live_access_token" ]; then
-    echo "otp verify response missing access_token"
-    exit 1
-  fi
+    if ! is_retryable_verify_failure; then
+      echo "non-retryable verify failure, stop."
+      exit 1
+    fi
+
+    echo "retryable verify failure detected, resending otp ..."
+    if ! request_otp_with_retry; then
+      exit 1
+    fi
+    if ! live_otp="$(prompt_live_otp)"; then
+      exit 1
+    fi
+    verify_attempt=$((verify_attempt + 1))
+  done
 
   RUN_E2E_LIVE=1 \
   E2E_LIVE_USE_TOKEN_MODE=1 \
