@@ -30,6 +30,7 @@
 - 新增 UI 审计脚本: `scripts/ci/frontend_ui_audit_screenshots.sh`
 - 新增契约测试: `tests/governance/test_frontend_ui_audit_artifacts.sh`
 - `scripts/ci/frontend_final_gate.sh` 已接入治理与异常链路门禁。
+- UI 审计原型映射升级为严格校验：支持 `prototype_v2/*.html` 渲染，缺失映射默认直接失败。
 
 5. Live dashboard resilience
 - 当后端返回空 `cards` payload 时，前端改为角色化 fallback cards，而不是显示阻断性 `看板加载失败`。
@@ -38,7 +39,7 @@
 ## Known Gaps
 
 - 非 live 环境下，部分 AI 数据页仍以降级文案为主，需依赖真实 Supabase 数据做最终体验验收。
-- `prototype` 快照来源若缺失同名文件，会回退使用 `current` 快照，需手动补齐设计稿映射。
+- 若需临时绕过严格原型映射，必须显式设置 `UI_AUDIT_ALLOW_PROTOTYPE_FALLBACK=1`，并在发布记录中补充原因。
 
 ## Sign-off Inputs
 

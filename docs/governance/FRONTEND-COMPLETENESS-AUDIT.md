@@ -62,4 +62,4 @@
 ## 5. Residual Risk
 
 - live OTP E2E仍依赖短信通道实时可用性。
-- visual audit当前在无原型图输入时会回退到 current 快照镜像，需人工二次比对原型差异。
+- visual audit 在启用紧急回退 (`UI_AUDIT_ALLOW_PROTOTYPE_FALLBACK=1`) 时会降低原型一致性证据强度，需人工签字说明。

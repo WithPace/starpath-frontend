@@ -10,9 +10,8 @@ if [ ! -x "$SCRIPT_PATH" ]; then
 fi
 
 OUT_DIR="$(mktemp -d)"
-trap 'rm -rf "$OUT_DIR"' EXIT
-
-UI_AUDIT_MOCK=1 UI_AUDIT_OUTPUT_DIR="$OUT_DIR" bash "$SCRIPT_PATH"
+PROTOTYPE_SRC_DIR="$(mktemp -d)"
+trap 'rm -rf "$OUT_DIR" "$PROTOTYPE_SRC_DIR"' EXIT
 
 expected_pages=(
   00-welcome
@@ -29,6 +28,19 @@ expected_pages=(
   11-analysis-report
   12-training-detail
 )
+
+for page in "${expected_pages[@]}"; do
+  cat > "$PROTOTYPE_SRC_DIR/${page}.html" <<HTML
+<!doctype html>
+<html lang="zh-CN"><body><main>${page}</main></body></html>
+HTML
+done
+
+UI_AUDIT_MOCK=1 \
+UI_AUDIT_STRICT_PROTOTYPE=1 \
+UI_AUDIT_PROTOTYPE_SOURCE_DIR="$PROTOTYPE_SRC_DIR" \
+UI_AUDIT_OUTPUT_DIR="$OUT_DIR" \
+bash "$SCRIPT_PATH"
 
 for page in "${expected_pages[@]}"; do
   if [ ! -f "$OUT_DIR/current/${page}.png" ]; then
