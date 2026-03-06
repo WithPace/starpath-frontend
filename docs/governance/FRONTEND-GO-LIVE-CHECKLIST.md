@@ -13,6 +13,12 @@ Create and fill `.env.local` from `.env.example`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+UI audit strict mapping variables:
+
+- `UI_AUDIT_PROTOTYPE_SOURCE_DIR` (default `../07-SPath/docs/prototype_v2`, must contain `00..12` prototype sources)
+- `UI_AUDIT_STRICT_PROTOTYPE` (default `1`, missing prototype source will fail gate)
+- `UI_AUDIT_ALLOW_PROTOTYPE_FALLBACK` (default `0`, set `1` only for emergency bypass)
+
 Optional live-E2E keys (only when running real-environment checks):
 
 - `RUN_E2E_LIVE=1`
@@ -78,6 +84,7 @@ Go-live can proceed only when:
 2. No blocking errors appear in smoke criteria pages.
 3. Release evidence updated in `docs/governance/FRONTEND-RELEASE-RECORD.md`.
 4. UI 审计工件可复现（`scripts/ci/frontend_ui_audit_screenshots.sh`）。
+5. 严格模式下无原型映射缺失（除非显式设置 `UI_AUDIT_ALLOW_PROTOTYPE_FALLBACK=1`）。
 
 ## 5. Rollback
 

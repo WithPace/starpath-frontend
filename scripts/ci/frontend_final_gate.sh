@@ -11,6 +11,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 bash tests/governance/test_frontend_ui_audit_artifacts.sh
+bash tests/governance/test_frontend_ui_audit_strict_mapping.sh
 pnpm build
 
 if [ "$RUN_E2E" = "1" ]; then
