@@ -46,6 +46,10 @@
 8. Live OTP retry resilience
 - `scripts/ci/frontend_live_e2e_interactive.sh` 在 token mode 增加 OTP 校验重试闭环：遇到过期/无效验证码时自动重发并重新输入，减少整段重跑。
 
+9. Dashboard live degradation hardening
+- `src/components/cards/role-dashboard-page.tsx` 为 dashboard 请求增加 `12s` 超时，避免 live 场景长时间 loading 阻断。
+- 非权限类失败改为渲染角色 fallback cards（并保留 telemetry），保障 `/dashboard` 页面在后端抖动下仍可用。
+
 ## Known Gaps
 
 - 非 live 环境下，部分 AI 数据页仍以降级文案为主，需依赖真实 Supabase 数据做最终体验验收。

@@ -23,6 +23,8 @@ type RoleDashboardPageProps = {
   roleLabel: string;
 };
 
+const DASHBOARD_REQUEST_TIMEOUT_MS = 12_000;
+
 export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageProps) {
   const router = useRouter();
   const runtime = useRoleRuntime(role);
@@ -68,6 +70,7 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
           {
             apiBaseUrl: env.apiBaseUrl,
             accessToken,
+            timeoutMs: DASHBOARD_REQUEST_TIMEOUT_MS,
           },
           {
             child_id: childId,
@@ -91,10 +94,14 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
 
         if (isPermissionDeniedMessage(errorMessage)) {
           router.replace(`/forbidden?reason=permission_denied&role=${role}`);
+          setError(role, errorMessage);
+          setCards(role, []);
+          return;
         }
 
-        setError(role, errorMessage);
-        setCards(role, []);
+        // Keep dashboard usable under transient upstream failures.
+        setError(role, null);
+        setCards(role, applyDashboardCardFallback([], role));
       } finally {
         setLoading(role, false);
       }
