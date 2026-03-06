@@ -43,6 +43,9 @@
 7. CI log noise hardening
 - 在 `scripts/ci/frontend_final_gate.sh` 与 `scripts/ci/frontend_live_e2e.sh` 增加 `NO_COLOR` 清理守卫，并在 `playwright.config.ts` 增加运行前环境清理，压降 Node 环境警告噪声。
 
+8. Live OTP retry resilience
+- `scripts/ci/frontend_live_e2e_interactive.sh` 在 token mode 增加 OTP 校验重试闭环：遇到过期/无效验证码时自动重发并重新输入，减少整段重跑。
+
 ## Known Gaps
 
 - 非 live 环境下，部分 AI 数据页仍以降级文案为主，需依赖真实 Supabase 数据做最终体验验收。
