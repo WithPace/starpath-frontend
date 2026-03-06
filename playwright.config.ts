@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+if ("NO_COLOR" in process.env) {
+  delete process.env.NO_COLOR;
+}
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,

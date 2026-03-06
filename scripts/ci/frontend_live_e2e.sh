@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Avoid Node warning noise when Playwright later injects FORCE_COLOR.
+if [ "${NO_COLOR+x}" = "x" ]; then
+  unset NO_COLOR
+fi
+
 is_invalid_anon_key() {
   local key="${1:-}"
   if [ -z "$key" ] || [ "$key" = "replace-with-anon-key" ] || [ "$key" = "++" ]; then
