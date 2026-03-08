@@ -19,7 +19,8 @@ describe("live e2e interactive otp retry contract", () => {
     expect(source).toContain("transport_error");
     expect(source).toContain('if [ "${last_verify_http_code:-}" = "unknown" ]; then');
     expect(source).toContain("diagnose_hook_unavailable");
-    expect(source).toContain("Service currently unavailable due to hook");
+    expect(source).toContain("unexpected hook failure");
+    expect(source).toContain('grep -qi "hook"');
     expect(source).toContain("provider_code=");
     expect(source).not.toContain('if live_access_token="$(verify_otp_for_access_token');
   });

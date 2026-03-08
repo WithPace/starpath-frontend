@@ -137,8 +137,8 @@ request_otp_with_retry() {
       continue
     fi
 
-    if [ "$error_code" = "unexpected_failure" ] && echo "$error_message" | grep -qi "Service currently unavailable due to hook"; then
-      echo "failed to request otp: Service currently unavailable due to hook"
+    if [ "$error_code" = "unexpected_failure" ] && echo "$error_message" | grep -qi "hook"; then
+      echo "failed to request otp: ${error_message:-unexpected hook failure}"
       diagnose_hook_unavailable
       return 1
     fi
