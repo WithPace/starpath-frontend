@@ -81,10 +81,27 @@ request_otp_once() {
     -d "{\"phone\":\"${E2E_LIVE_PHONE}\",\"create_user\":true}"
 }
 
+diagnose_hook_unavailable() {
+  local hook_resp hook_code provider_code provider_message
+  hook_resp="$(mktemp)"
+
+  hook_code="$(curl -sS -o "$hook_resp" -w "%{http_code}" \
+    "${NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sms-hook" \
+    -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"user\":{\"phone\":\"${E2E_LIVE_PHONE}\"},\"sms\":{\"otp\":\"000000\"}}" || true)"
+
+  provider_code="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p?.error?.provider_code || "").trim()); } catch { process.stdout.write(""); }' "$hook_resp" 2>/dev/null || true)"
+  provider_message="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p?.error?.message || p?.msg || "").trim()); } catch { process.stdout.write(""); }' "$hook_resp" 2>/dev/null || true)"
+
+  echo "hook diagnostic: http=${hook_code:-unknown} provider_code=${provider_code:-unknown} message=${provider_message:-none}"
+  rm -f "$hook_resp"
+}
+
 request_otp_with_retry() {
   local max_attempts=6
   local attempt=1
-  local otp_resp http_code body error_code wait_seconds
+  local otp_resp http_code body error_code error_message wait_seconds
 
   while [ "$attempt" -le "$max_attempts" ]; do
     otp_resp="$(mktemp)"
@@ -98,6 +115,7 @@ request_otp_with_retry() {
     fi
 
     error_code="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.error_code || "").trim());' "$otp_resp" 2>/dev/null || true)"
+    error_message="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.msg || p.message || "").trim());' "$otp_resp" 2>/dev/null || true)"
     rm -f "$otp_resp"
 
     if [ "$error_code" = "hook_timeout" ]; then
@@ -117,6 +135,12 @@ request_otp_with_retry() {
       sleep "$wait_seconds"
       attempt=$((attempt + 1))
       continue
+    fi
+
+    if [ "$error_code" = "unexpected_failure" ] && echo "$error_message" | grep -qi "Service currently unavailable due to hook"; then
+      echo "failed to request otp: Service currently unavailable due to hook"
+      diagnose_hook_unavailable
+      return 1
     fi
 
     echo "failed to request otp: http=$http_code body=$body"
@@ -140,51 +164,87 @@ prompt_live_otp() {
 
 last_verify_error_code=""
 last_verify_error_message=""
+last_verify_http_code=""
+last_verify_access_token=""
 
 verify_otp_for_access_token() {
   local phone="$1"
   local otp="$2"
   local verify_resp
+  local verify_headers
   verify_resp="$(mktemp)"
+  verify_headers="$(mktemp)"
 
   local verify_code
-  verify_code="$(curl -sS -o "$verify_resp" -w "%{http_code}" \
+  last_verify_access_token=""
+  verify_code="$(curl -sS -D "$verify_headers" -o "$verify_resp" -w "%{http_code}" \
     "${NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify" \
     -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
     -H "Content-Type: application/json" \
-    -d "{\"phone\":\"${phone}\",\"token\":\"${otp}\",\"type\":\"sms\"}")"
+    -d "{\"phone\":\"${phone}\",\"token\":\"${otp}\",\"type\":\"sms\"}" || true)"
+
+  if [[ ! "$verify_code" =~ ^[0-9]{3}$ ]]; then
+    last_verify_http_code="unknown"
+    last_verify_error_code="transport_error"
+    last_verify_error_message="verify_transport_failure"
+    rm -f "$verify_resp"
+    rm -f "$verify_headers"
+    return 1
+  fi
 
   if [ "$verify_code" != "200" ]; then
+    last_verify_http_code="$verify_code"
     last_verify_error_code="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.error_code || "").trim()); } catch { process.stdout.write(""); }' "$verify_resp" 2>/dev/null || true)"
     last_verify_error_message="$(node -e 'const fs=require("fs"); try { const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.msg || p.message || p.error_description || "").trim()); } catch { process.stdout.write(""); }' "$verify_resp" 2>/dev/null || true)"
+
+    if [ -z "$last_verify_error_code" ]; then
+      last_verify_error_code="$(sed -n 's/^x-sb-error-code:[[:space:]]*//Ip' "$verify_headers" | tr -d '\r' | tail -n 1 | xargs || true)"
+    fi
     if [ -z "$last_verify_error_message" ]; then
-      last_verify_error_message="$(cat "$verify_resp")"
+      if [ -s "$verify_resp" ]; then
+        last_verify_error_message="$(cat "$verify_resp")"
+      else
+        last_verify_error_message="http_${verify_code}"
+      fi
     fi
     rm -f "$verify_resp"
+    rm -f "$verify_headers"
     return 1
   fi
 
   local token
   token="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write((p.access_token || "").trim());' "$verify_resp")"
   rm -f "$verify_resp"
+  rm -f "$verify_headers"
 
   if [ -z "$token" ]; then
+    last_verify_http_code="$verify_code"
     last_verify_error_code="missing_access_token"
     last_verify_error_message="otp verify response missing access_token"
     return 1
   fi
 
+  last_verify_access_token="$token"
+  last_verify_http_code=""
   last_verify_error_code=""
   last_verify_error_message=""
-  printf "%s" "$token"
+  return 0
 }
 
 is_retryable_verify_failure() {
+  if [ "${last_verify_http_code:-}" = "403" ]; then
+    return 0
+  fi
+
   case "${last_verify_error_code}" in
-    invalid_grant|otp_expired|invalid_otp|bad_code|expired_code)
+    invalid_grant|otp_expired|invalid_otp|bad_code|expired_code|transport_error)
       return 0
       ;;
   esac
+
+  if [ "${last_verify_http_code:-}" = "unknown" ]; then
+    return 0
+  fi
 
   if echo "${last_verify_error_message}" | grep -Eqi "token has expired or is invalid|expired|invalid"; then
     return 0
@@ -210,13 +270,15 @@ fi
 if [ "${E2E_LIVE_USE_TOKEN_MODE:-0}" = "1" ]; then
   max_verify_attempts=3
   verify_attempt=1
+  live_access_token=""
   while true; do
     echo "verifying otp via supabase auth api ... (attempt ${verify_attempt}/${max_verify_attempts})"
-    if live_access_token="$(verify_otp_for_access_token "${E2E_LIVE_PHONE}" "${live_otp}")"; then
+    if verify_otp_for_access_token "${E2E_LIVE_PHONE}" "${live_otp}"; then
+      live_access_token="${last_verify_access_token}"
       break
     fi
 
-    echo "otp verify failed: code=${last_verify_error_code:-unknown} message=${last_verify_error_message:-unknown}"
+    echo "otp verify failed: http=${last_verify_http_code:-unknown} code=${last_verify_error_code:-unknown} message=${last_verify_error_message:-unknown}"
     if [ -n "${E2E_LIVE_OTP:-}" ]; then
       echo "E2E_LIVE_OTP mode is one-shot. update OTP and rerun."
       exit 1

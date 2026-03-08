@@ -53,7 +53,7 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
     const accessToken = runtime.accessToken;
     const childId = runtime.selectedChildId;
 
-    if (!runtime.isAuthenticated || !childId || !accessToken) {
+    if (!childId || !accessToken) {
       setCards(role, []);
       setLoading(role, false);
       setError(role, "请先完成登录并选择孩子，再加载看板。");
@@ -113,7 +113,6 @@ export function RoleDashboardPage({ title, role, roleLabel }: RoleDashboardPageP
     routeDecision.allow,
     router,
     runtime.accessToken,
-    runtime.isAuthenticated,
     runtime.selectedChildId,
     setCards,
     setError,

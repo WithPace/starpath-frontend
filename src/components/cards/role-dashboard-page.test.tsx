@@ -99,4 +99,27 @@ describe("RoleDashboardPage", () => {
       expect(setCards).toHaveBeenCalledWith("parent", applyDashboardCardFallback([], "parent"));
     });
   });
+
+  it("loads dashboard in manual-token mode without supabase session", async () => {
+    runtimeState = {
+      ...runtimeState,
+      isAuthenticated: false,
+      selectedChildId: "child-manual",
+      accessToken: "manual-token",
+    };
+    callOrchestrator.mockResolvedValueOnce([
+      {
+        event: "done",
+        data: {
+          cards: [{ card_type: "summary_card", title: "手动模式看板" }],
+        },
+      },
+    ]);
+
+    render(<RoleDashboardPage title="家长端看板" role="parent" roleLabel="家长" />);
+
+    await waitFor(() => {
+      expect(callOrchestrator).toHaveBeenCalledTimes(1);
+    });
+  });
 });
