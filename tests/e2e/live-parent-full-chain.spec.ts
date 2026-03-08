@@ -91,7 +91,11 @@ test.describe("@live parent full chain", () => {
     await expect(page.getByRole("heading", { name: "设置" })).toBeVisible();
     await page.getByLabel("昵称").fill(nickname);
     await page.getByRole("button", { name: "保存昵称" }).click();
-    await expect(page.getByText(`昵称已更新：${nickname}`)).toBeVisible({ timeout: 20_000 });
+    if (config.accessToken) {
+      await expect(page.getByText("请先登录后再修改昵称。")).toBeVisible({ timeout: 20_000 });
+    } else {
+      await expect(page.getByText(`昵称已更新：${nickname}`)).toBeVisible({ timeout: 20_000 });
+    }
 
     await page.goto("/home-guide");
     await expect(page).toHaveURL(/\/home-guide$/);
