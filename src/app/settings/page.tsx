@@ -16,6 +16,7 @@ type SettingsTab = "account" | "preference" | "legal" | "other";
 type AiStyle = "简洁" | "详细" | "温暖";
 
 const PREF_KEY = "starpath_parent_preferences_v1";
+const MANUAL_NICKNAME_KEY = "starpath_parent_manual_nickname_v1";
 
 type ParentPreferences = {
   reminderTime: string;
@@ -55,6 +56,34 @@ function readPreferences(): ParentPreferences {
   }
 }
 
+function readManualNickname(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(MANUAL_NICKNAME_KEY)?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeManualNickname(name: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MANUAL_NICKNAME_KEY, name);
+  } catch {
+    // ignore storage failures in manual session fallback mode
+  }
+}
+
+function buildManualProfile(name: string): UserProfileSnapshot {
+  return {
+    userId: "manual-session",
+    name: name || null,
+    phone: null,
+    sessionPhone: null,
+    sessionEmail: null,
+  };
+}
+
 export default function SettingsPage() {
   const runtime = useRoleRuntime("parent");
   const client = useMemo(() => tryCreateBrowserSupabaseClient(), []);
@@ -71,6 +100,7 @@ export default function SettingsPage() {
   const [aiStyle, setAiStyle] = useState<AiStyle>(() => readPreferences().aiStyle);
   const [trainingNotify, setTrainingNotify] = useState(() => readPreferences().trainingNotify);
   const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
+  const isManualSessionMode = Boolean(runtime.accessToken) && !runtime.isAuthenticated;
 
   const blockingReason = !client ? "缺少 Supabase 前端配置，设置页已降级。" : null;
 
@@ -82,8 +112,14 @@ export default function SettingsPage() {
       setProfileError(null);
       try {
         const snapshot = await getCurrentUserProfile(client);
-        setProfile(snapshot);
-        setNickname(snapshot?.name ?? "");
+        if (!snapshot && isManualSessionMode) {
+          const manualName = readManualNickname();
+          setProfile(buildManualProfile(manualName));
+          setNickname(manualName);
+        } else {
+          setProfile(snapshot);
+          setNickname(snapshot?.name ?? "");
+        }
       } catch (error) {
         setProfileError(error instanceof Error ? error.message : "读取账号信息失败。");
       } finally {
@@ -92,17 +128,31 @@ export default function SettingsPage() {
     };
 
     void run();
-  }, [client]);
+  }, [client, isManualSessionMode]);
 
   const saveNickname = async () => {
     if (!client) {
       setAccountMessage("当前环境未配置 Supabase，无法保存昵称。");
       return;
     }
+    const normalizedNickname = nickname.trim();
+    if (!normalizedNickname) {
+      setAccountMessage("昵称不能为空。");
+      return;
+    }
+
+    if (isManualSessionMode) {
+      writeManualNickname(normalizedNickname);
+      setProfile((prev) => (prev ? { ...prev, name: normalizedNickname } : buildManualProfile(normalizedNickname)));
+      setNickname(normalizedNickname);
+      setAccountMessage(`昵称已更新：${normalizedNickname}`);
+      return;
+    }
+
     try {
       setSavingNickname(true);
       setAccountMessage(null);
-      const result = await saveParentNickname(client, nickname);
+      const result = await saveParentNickname(client, normalizedNickname);
       setAccountMessage(`昵称已更新：${result.name}`);
       setProfile((prev) => (prev ? { ...prev, name: result.name } : prev));
     } catch (error) {

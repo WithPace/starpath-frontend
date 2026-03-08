@@ -5,10 +5,18 @@ import SettingsPage from "./page";
 
 const getCurrentUserProfileMock = vi.fn();
 const saveParentNicknameMock = vi.fn();
+const signOutMock = vi.fn(async () => {});
+
+let runtimeState = {
+  accessToken: null as string | null,
+  isAuthenticated: true,
+  loading: false,
+};
 
 vi.mock("@/lib/runtime/use-role-runtime", () => ({
   useRoleRuntime: () => ({
-    signOut: vi.fn(async () => {}),
+    ...runtimeState,
+    signOut: signOutMock,
   }),
 }));
 
@@ -23,8 +31,14 @@ vi.mock("@/lib/prototype/parent-data-access", () => ({
 
 describe("SettingsPage", () => {
   beforeEach(() => {
+    signOutMock.mockReset();
     getCurrentUserProfileMock.mockReset();
     saveParentNicknameMock.mockReset();
+    runtimeState = {
+      accessToken: null,
+      isAuthenticated: true,
+      loading: false,
+    };
     getCurrentUserProfileMock.mockResolvedValue({
       userId: "user-1",
       name: "乐乐妈妈",
@@ -42,6 +56,26 @@ describe("SettingsPage", () => {
 
     await waitFor(() => expect(saveParentNicknameMock).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/昵称已更新/)).toBeInTheDocument();
+  });
+
+  it("creates manual session nickname path when no auth session exists", async () => {
+    runtimeState = {
+      accessToken: "manual-token",
+      isAuthenticated: false,
+      loading: false,
+    };
+    getCurrentUserProfileMock.mockResolvedValue(null);
+    saveParentNicknameMock.mockRejectedValue(new Error("请先登录后再修改昵称。"));
+
+    render(<SettingsPage />);
+
+    fireEvent.change(screen.getByLabelText("昵称"), { target: { value: "手动会话昵称" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存昵称" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("昵称已更新：手动会话昵称")).toBeInTheDocument();
+    });
+    expect(saveParentNicknameMock).not.toHaveBeenCalled();
   });
 
   it("shows legal and feedback route links", async () => {
